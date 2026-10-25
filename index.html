@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<meta name="theme-color" content="#151021" />
+<meta name="description" content="CallScape — a top-down pixel art escape-room review game for Grade 11 Contact Center Services (CCS) students of Emilio Jacinto National High School." />
+<title>CallScape — CCS Contact Center Escape Room</title>
+<link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<div id="game-shell">
+  <canvas id="game" aria-label="CallScape game viewport"></canvas>
+
+  <!-- ══════════════════════════ HUD ══════════════════════════ -->
+  <div id="hud" class="hud">
+
+    <!-- top-left: room name -->
+    <div class="panel panel--room" id="room-panel">
+      <div class="room-name"><span class="room-dot" aria-hidden="true"></span><span id="room-name">CCS Training Floor</span></div>
+      <div class="room-sub">Grade 11 · Contact Center Services</div>
+      <div class="hud-progress">
+        <div class="hud-progress__label"><span>Clues</span><span id="clue-count">0 / 3</span></div>
+        <div class="hud-progress__track"><i id="clue-bar" style="width:0%"></i></div>
+      </div>
+
+      <!-- progression: level, XP and the reward wallet -->
+      <div class="hud-xp">
+        <div class="hud-xp__row">
+          <span class="lvl-badge" id="lvl-badge" title="Level">LV 1</span>
+          <span class="hud-xp__label" id="xp-label">0 / 100 XP</span>
+        </div>
+        <div class="hud-progress__track hud-progress__track--xp"><i id="xp-bar" style="width:0%"></i></div>
+        <div class="hud-wallet">
+          <span class="wallet-chip" id="coin-count" title="Training coins">◎ 0</span>
+          <span class="wallet-chip wallet-chip--streak" id="streak-chip" title="Correct-answer streak">▲ 0</span>
+          <span class="wallet-chip wallet-chip--badge" id="badge-count" title="Achievements">★ 0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- top-right controls -->
+    <div class="top-actions">
+      <button class="icon-btn" id="btn-book" title="Handbook (B)" aria-label="Open the CCS handbook">▤</button>
+      <button class="icon-btn" id="btn-sound" title="Toggle sound" aria-label="Toggle sound">♪</button>
+      <button class="icon-btn" id="btn-pause" title="Pause (Esc)" aria-label="Pause game">❚❚</button>
+    </div>
+
+    <!-- objective -->
+    <div class="panel panel--mission">
+      <div class="mission-label">◆ Mission</div>
+      <div class="mission-text" id="mission-text">Explore the CCS training floor and look for clues.</div>
+      <div class="mission-next" id="mission-next"></div>
+      <ul class="obj-list" id="obj-list" aria-label="Objectives"></ul>
+    </div>
+
+    <!-- floating "+XP / +coin" feedback, level-up banner and achievement popups -->
+    <div class="reward-layer" id="reward-layer" aria-live="polite"></div>
+    <div class="levelburst" id="levelburst" hidden>
+      <div class="levelburst__k">LEVEL UP</div>
+      <div class="levelburst__v" id="levelburst-v">2</div>
+    </div>
+    <div class="achv-host" id="achv-host" aria-live="polite"></div>
+
+    <!-- collected clue chips -->
+    <div class="clue-tray" id="clue-tray" aria-live="polite"></div>
+
+    <!-- bottom action bar for touch -->
+    <div class="action-bar" id="action-bar">
+      <button class="act-btn act-btn--small" id="btn-notes" title="Clue journal" aria-label="Open clue journal">◈</button>
+      <button class="act-btn act-btn--main" id="btn-act" aria-label="Interact with object" disabled>
+        <span class="act-key">E</span><span class="act-label" id="act-label">Interact</span>
+      </button>
+      <button class="act-btn act-btn--stand" id="btn-stand" aria-label="Stand up" title="Stand up (Space)" hidden>
+        <span class="act-key">␣</span><span class="act-label">Stand</span>
+      </button>
+    </div>
+
+    <!-- joystick -->
+    <div id="joystick" class="joystick" role="group" aria-label="Movement joystick">
+      <div class="joystick__ring" id="joy-ring">
+        <div class="joystick__knob" id="joy-knob"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- room-to-room fade (Room 2 transition) -->
+  <div id="fade" class="fade" aria-hidden="true"></div>
+
+  <!-- ══════════════════════════ INTERACT PROMPT ══════════════════════════ -->
+  <div id="prompt" class="prompt" hidden>
+    <span class="prompt__key" id="prompt-key">E</span>
+    <span class="prompt__text" id="prompt-text">Inspect</span>
+  </div>
+
+  <!-- ══════════════════════════ DIALOGUE / QUESTION PANEL ══════════════════════════ -->
+  <div id="dialogue" class="dialogue" hidden>
+    <div class="dialogue__window">
+      <div class="dialogue__head">
+        <span class="dialogue__speaker" id="dlg-speaker">OBJECT</span>
+        <span class="dialogue__step" id="dlg-step"></span>
+        <button class="dialogue__close" id="dlg-close" aria-label="Close dialogue">✕</button>
+      </div>
+
+      <div class="dialogue__body" id="dlg-body">
+        <p class="dialogue__text" id="dlg-text"></p>
+
+        <!-- typed-answer quiz -->
+        <form class="quiz" id="quiz-form" hidden>
+          <div class="quiz__badges" id="quiz-badges">
+            <span class="badge badge--topic" id="quiz-topic">Quarter 1</span>
+            <span class="badge badge--book" id="quiz-bookref">Q1 › Jargons &amp; metrics</span>
+          </div>
+          <div class="quiz__prompt" id="quiz-prompt"></div>
+          <label class="quiz__label" for="quiz-input">Your answer</label>
+          <div class="quiz__row">
+            <input class="quiz__input" id="quiz-input" type="text" autocomplete="off"
+                   autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="80" />
+            <button class="quiz__submit" id="quiz-submit" type="submit">Submit</button>
+          </div>
+          <div class="quiz__feedback" id="quiz-feedback" aria-live="polite"></div>
+          <div class="quiz__xp" id="quiz-xp" aria-live="polite"></div>
+          <div class="quiz__meta" id="quiz-meta"></div>
+          <button class="quiz__booklink" id="quiz-booklink" type="button">▤ Check the handbook (offline notes)</button>
+        </form>
+
+        <!-- item collected card -->
+        <div class="item-card" id="item-card" hidden>
+          <div class="item-card__icon" id="item-icon">◆</div>
+          <div>
+            <div class="item-card__title" id="item-title">Clue acquired</div>
+            <div class="item-card__desc" id="item-desc"></div>
+            <div class="item-card__ref" id="item-ref"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="dialogue__foot">
+        <button class="pix-btn" id="dlg-continue">Continue ▸</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════ TOASTS ══════════════════════════ -->
+  <div id="toasts" class="toasts" aria-live="polite"></div>
+
+  <!-- ══════════════════════════ MAIN MENU ══════════════════════════ -->
+  <!-- ══════════════════════ DEVICE / CONTROLS SETUP ══════════════════════ -->
+  <div id="device" class="overlay overlay--device" hidden>
+    <div class="device">
+      <div class="device__crest" aria-hidden="true">
+        <svg viewBox="0 0 64 64" width="52" height="52">
+          <rect x="6" y="10" width="52" height="34" rx="2" fill="#1d2b3a" stroke="#74e6d6" stroke-width="2"/>
+          <rect x="11" y="15" width="42" height="24" fill="#2c4a5e"/>
+          <rect x="15" y="19" width="16" height="2" fill="#8ef0e2"/>
+          <rect x="15" y="24" width="26" height="2" fill="#547e8c"/>
+          <rect x="15" y="29" width="20" height="2" fill="#547e8c"/>
+          <rect x="26" y="44" width="12" height="5" fill="#1d2b3a" stroke="#74e6d6" stroke-width="2"/>
+          <rect x="18" y="49" width="28" height="3" fill="#74e6d6"/>
+        </svg>
+      </div>
+      <p class="device__kick">First setup</p>
+      <h1 class="device__title">Where are you playing?</h1>
+      <p class="device__sub">Pick your device so the game can set the right controls and layout.
+        You can change this later in <b>Settings</b>.</p>
+
+      <div class="device__grid" role="group" aria-label="Choose your device">
+        <button class="device__card" type="button" data-device="pc">
+          <span class="device__art" aria-hidden="true">
+            <svg viewBox="0 0 72 56" width="72" height="56">
+              <rect x="4" y="4" width="64" height="40" rx="2" fill="#221a38" stroke="#8f7ac4" stroke-width="3"/>
+              <rect x="10" y="10" width="52" height="28" fill="#12162a"/>
+              <rect x="14" y="14" width="22" height="3" fill="#74e6d6"/>
+              <rect x="14" y="21" width="34" height="3" fill="#4b5f86"/>
+              <rect x="14" y="28" width="26" height="3" fill="#4b5f86"/>
+              <rect x="30" y="45" width="12" height="5" fill="#8f7ac4"/>
+              <rect x="20" y="50" width="32" height="4" fill="#8f7ac4"/>
+            </svg>
+          </span>
+          <span class="device__name">Computer</span>
+          <span class="device__desc">Desktop or laptop<br>WASD / arrows + E</span>
+          <span class="device__pick">Use keyboard</span>
+        </button>
+
+        <button class="device__card" type="button" data-device="phone">
+          <span class="device__art" aria-hidden="true">
+            <svg viewBox="0 0 56 72" width="56" height="72">
+              <rect x="10" y="3" width="36" height="66" rx="6" fill="#221a38" stroke="#8f7ac4" stroke-width="3"/>
+              <rect x="15" y="11" width="26" height="48" fill="#12162a"/>
+              <circle cx="28" cy="64" r="3" fill="#8f7ac4"/>
+              <circle cx="20" cy="52" r="7" fill="none" stroke="#74e6d6" stroke-width="2"/>
+              <circle cx="20" cy="52" r="3" fill="#74e6d6"/>
+              <circle cx="36" cy="52" r="6" fill="#f7c85a" opacity=".85"/>
+            </svg>
+          </span>
+          <span class="device__name">Phone</span>
+          <span class="device__desc">Android or iPhone<br>joystick + tap buttons</span>
+          <span class="device__pick">Use touch</span>
+        </button>
+      </div>
+
+      <p class="device__note">A tablet works too — choose <b>Phone</b> for touch controls.</p>
+    </div>
+  </div>
+
+  <div id="menu" class="overlay overlay--menu">
+    <div class="overlay__box overlay__box--menu">
+      <div class="title-logo">
+        <span class="title-logo__c">C</span><span class="title-logo__word">allScape</span>
+      </div>
+      <p class="title-kicker">Contact Center Services · Q1–Q4 Review</p>
+
+      <!-- offline save summary -->
+      <div class="save-card" id="save-card">
+        <div class="save-card__head">
+          <span class="save-card__dot" id="save-dot"></span>
+          <span id="save-title">No offline save found</span>
+        </div>
+        <div class="save-card__body" id="save-body">Start a new game to create one on this device.</div>
+      </div>
+
+      <div class="overlay__actions">
+        <button class="pix-btn pix-btn--wide pix-btn--start" id="btn-resume">▶ Resume offline save</button>
+        <button class="pix-btn pix-btn--wide" id="btn-newgame">✦ New game</button>
+        <div class="menu-row">
+          <button class="pix-btn pix-btn--half" id="btn-menu-book">▤ Handbook</button>
+          <button class="pix-btn pix-btn--half pix-btn--ghost" id="btn-menu-settings">⚙ Settings</button>
+        </div>
+        <button class="pix-btn pix-btn--wide pix-btn--ghost" id="btn-menu-help">How to play</button>
+      </div>
+
+      <div class="title-help" id="menu-help" hidden>
+        <p><b>Desktop</b> — W A S D or Arrow keys to walk. <b>E</b> to inspect or interact. <b>B</b> opens the handbook.</p>
+        <p><b>Mobile</b> — hold the joystick (lower-left) and tap the Interact button (lower-right).</p>
+        <p><b>Chair</b> — press <b>E</b> at a chair to sit with an agent; <b>Space</b> stands you up again.</p>
+        <p>Read the <b>CCS Handbook</b> on the shelves at any time — all four quarters, with call scripts, email templates and metric formulas. Every question on the floor is answered inside it.</p>
+        <p>Walk to a chair and press <b>E</b> to sit with an agent, then <b>E</b> again to work the computer. <b>Space</b> stands you up.</p>
+        <p>Four terminals, two questions each (Q1–Q4). Collect the three review cards, then open the exit door and step through.</p>
+        <p><b>Optional</b> — the <b>Mock Call Bay</b> door in the top wall leads to a practice room with six extra questions and a bonus card.</p>
+        <p><b>Room 2</b> — clear the training floor and the <b>QA &amp; Escalation Wing</b> door opens on the right wall: six new console questions, three relics and the QA Wing handbook chapter.</p>
+        <p><b>Robi</b> — your robot companion hovers behind you with hints. Correct answers and review cards earn <b>XP</b>, <b>coins</b>, answer streaks and <b>achievements</b> (8 to find). Level up, then check your tally in the pause menu or at the end of the run.</p>
+        <p class="title-help__note">Progress is saved offline on this device — no account, no internet needed.</p>
+      </div>
+
+      <div class="menu-foot">
+        <span class="menu-foot__tag">■ Offline save</span>
+        <span class="menu-foot__ver">CallScape v2.1 · Grade 11 Contact Center Services · EJNHS</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════ SETTINGS ══════════════════════════ -->
+  <div id="settings" class="overlay" hidden>
+    <div class="overlay__box overlay__box--wide">
+      <h2 class="overlay__title">Settings</h2>
+      <p class="overlay__sub">Saved on this device with your offline progress.</p>
+
+      <div class="set-list" id="set-list">
+        <div class="set-row">
+          <div class="set-copy"><div class="set-name">Sound effects</div><div class="set-desc">Blips for walking, clues and answers.</div></div>
+          <div class="seg" data-setting="sound">
+            <button class="seg__btn" data-value="on">On</button>
+            <button class="seg__btn" data-value="off">Off</button>
+          </div>
+        </div>
+
+        <div class="set-row">
+          <div class="set-copy"><div class="set-name">Review hints</div><div class="set-desc">Show a hint after the second wrong answer.</div></div>
+          <div class="seg" data-setting="hints">
+            <button class="seg__btn" data-value="on">On</button>
+            <button class="seg__btn" data-value="off">Off</button>
+          </div>
+        </div>
+
+        <div class="set-row">
+          <div class="set-copy"><div class="set-name">Interaction prompt</div><div class="set-desc">Show the floating "E — inspect" label in the room.</div></div>
+          <div class="seg" data-setting="prompt">
+            <button class="seg__btn" data-value="on">On</button>
+            <button class="seg__btn" data-value="off">Off</button>
+          </div>
+        </div>
+
+        <div class="set-row">
+          <div class="set-copy"><div class="set-name">Joystick side</div><div class="set-desc">For left- or right-handed play.</div></div>
+          <div class="seg" data-setting="joystick">
+            <button class="seg__btn" data-value="left">Left</button>
+            <button class="seg__btn" data-value="right">Right</button>
+          </div>
+        </div>
+
+        <div class="set-row">
+          <div class="set-copy"><div class="set-name">Playing on</div><div class="set-desc">Switches between keyboard and touch controls.</div></div>
+          <div class="seg" data-setting="device">
+            <button class="seg__btn" data-value="pc">Computer</button>
+            <button class="seg__btn" data-value="phone">Phone</button>
+          </div>
+        </div>
+
+        <div class="set-row">
+          <div class="set-copy"><div class="set-name">Text size</div><div class="set-desc">Size of dialogue and book text.</div></div>
+          <div class="seg" data-setting="textsize">
+            <button class="seg__btn" data-value="normal">Normal</button>
+            <button class="seg__btn" data-value="large">Large</button>
+          </div>
+        </div>
+
+        <div class="set-row set-row--save">
+          <div class="set-copy"><div class="set-name">Offline save</div><div class="set-desc" id="settings-save-desc">No save on this device yet.</div></div>
+          <button class="pix-btn pix-btn--danger pix-btn--compact" id="btn-wipe">Delete save</button>
+        </div>
+      </div>
+
+      <div class="overlay__actions">
+        <button class="pix-btn pix-btn--wide" id="btn-settings-close">Back</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════ CODE BOOK ══════════════════════════ -->
+  <div id="book" class="overlay overlay--book" hidden>
+    <div class="book" id="book-shell">
+
+      <!-- leather front cover: swings open when the handbook is opened -->
+      <div class="book__cover" id="book-cover" aria-hidden="true">
+        <div class="book__cover-frame">
+          <div class="book__cover-crest">▤</div>
+          <div class="book__cover-title">CCS<br>Operations<br>Manual</div>
+          <div class="book__cover-rule"></div>
+          <div class="book__cover-school">Emilio Jacinto<br>National High School</div>
+          <div class="book__cover-grade">Grade 11 · Contact Center Services</div>
+          <div class="book__cover-shelf">Training laboratory copy</div>
+        </div>
+        <div class="book__cover-spine"><span>Q1 · Q2 · Q3 · Q4</span></div>
+      </div>
+
+      <div class="book__inside">
+        <!-- left leaf: the book plate + contents of the open chapter -->
+        <aside class="book__leaf book__leaf--left">
+          <div class="book__plate">
+            <div class="book__plate-k">Contents</div>
+            <div class="book__plate-title" id="book-plate-title">CCS Operations Manual</div>
+            <div class="book__plate-sub" id="book-plate-sub">Grade 11 · Q1 to Q4</div>
+          </div>
+          <div class="book__chapter-label" id="book-plate-chapter">Quarter 1</div>
+          <ol class="book__toc" id="book-toc"></ol>
+          <div class="book__plate-foot">
+            <span id="book-plate-edition">Training laboratory copy</span>
+            <span class="book__leaf-no">i</span>
+          </div>
+        </aside>
+
+        <!-- right leaf: the reading page -->
+        <section class="book__leaf book__leaf--right">
+          <div class="book__head">
+            <div>
+              <div class="book__title" id="book-title">CCS Operations Manual</div>
+              <div class="book__sub" id="book-sub">Grade 11 Contact Center Services · Q1 to Q4</div>
+            </div>
+            <button class="book__close" id="btn-book-close" aria-label="Close the handbook">✕</button>
+          </div>
+          <div class="book__tabs" id="book-tabs" role="tablist"></div>
+          <div class="book__page" id="book-page"></div>
+          <div class="book__foot">
+            <span class="book__edition" id="book-edition">Training laboratory copy</span>
+            <button class="pix-btn pix-btn--compact" id="btn-book-done">Close book</button>
+          </div>
+          <div class="book__turn" id="book-turn" aria-hidden="true"></div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════ PAUSE MENU ══════════════════════════ -->
+  <div id="pause" class="overlay" hidden>
+    <div class="overlay__box">
+      <h2 class="overlay__title">Paused</h2>
+      <p class="overlay__sub">Take a breath — your clues are safe.</p>
+      <div class="overlay__actions">
+        <button class="pix-btn pix-btn--wide" id="btn-resume-play">Resume</button>
+        <div class="menu-row">
+          <button class="pix-btn pix-btn--half" id="btn-journal-pause">◈ Journal</button>
+          <button class="pix-btn pix-btn--half" id="btn-pause-book">▤ Handbook</button>
+        </div>
+        <button class="pix-btn pix-btn--wide pix-btn--ghost" id="btn-pause-settings">⚙ Settings</button>
+        <button class="pix-btn pix-btn--wide pix-btn--ghost" id="btn-save-menu">💾 Save &amp; main menu</button>
+        <button class="pix-btn pix-btn--wide pix-btn--danger" id="btn-reset">Restart this run</button>
+      </div>
+      <!-- progression recap: level, wallet and the achievement set -->
+      <div class="pause-prog" id="pause-prog">
+        <div class="pause-prog__row" id="pause-prog-row"></div>
+        <div class="achv-strip" id="pause-achv"></div>
+      </div>
+
+      <div class="overlay__controls" id="controls-help">
+        <p><b>Move</b> W A S D / Arrow keys / joystick</p>
+        <p><b>Interact</b> E or the Interact button</p>
+        <p><b>Sit</b> E at a chair &nbsp;·&nbsp; <b>Stand</b> Space</p>
+        <p><b>Handbook</b> B &nbsp;·&nbsp; <b>Close</b> Esc</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════ JOURNAL ══════════════════════════ -->
+  <div id="journal" class="overlay" hidden>
+    <div class="overlay__box overlay__box--wide">
+      <h2 class="overlay__title">Clue Journal</h2>
+      <p class="overlay__sub">Every clue you found — the same facts the tests ask for.</p>
+      <ul class="journal-list" id="journal-list"></ul>
+      <div class="overlay__actions">
+        <button class="pix-btn pix-btn--wide pix-btn--ghost" id="btn-journal-book">▤ Open the handbook</button>
+        <button class="pix-btn pix-btn--wide" id="btn-journal-close">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════ COMPLETION ══════════════════════════ -->
+  <div id="complete" class="overlay" hidden>
+    <div class="overlay__box overlay__box--wide overlay__box--win">
+      <div class="win-burst" aria-hidden="true"></div>
+      <h2 class="overlay__title overlay__title--win" id="complete-title">Training Floor Cleared!</h2>
+      <p class="overlay__sub" id="complete-sub">You escaped the CCS training floor.</p>
+      <div class="win-ribbon" id="win-ribbon" hidden></div>
+      <div class="win-reward" id="win-reward"></div>
+      <div class="stat-grid" id="stat-grid"></div>
+      <div class="achv-strip" id="achv-strip"></div>
+      <div class="overlay__actions">
+        <button class="pix-btn pix-btn--wide pix-btn--gold" id="btn-enter-wing" hidden>Enter the QA Wing →</button>
+        <button class="pix-btn pix-btn--wide pix-btn--ghost" id="btn-keep-exploring">Keep exploring</button>
+        <div class="menu-row">
+          <button class="pix-btn pix-btn--half" id="btn-play-again">Play again</button>
+          <button class="pix-btn pix-btn--half pix-btn--ghost" id="btn-complete-menu">Main menu</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <noscript>
+    <div class="overlay"><div class="overlay__box">
+      <h2 class="overlay__title">JavaScript required</h2>
+      <p class="overlay__sub">CallScape runs on HTML, CSS and JavaScript — please enable JavaScript to play.</p>
+    </div></div>
+  </noscript>
+</div>
+
+<script src="questions.js"></script>
+<script src="codebook.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
