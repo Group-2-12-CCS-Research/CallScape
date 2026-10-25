@@ -988,12 +988,12 @@ body { -webkit-text-size-adjust: 100%; }
     padding: 6px 10px 7px;
   }
   body.room-collapsed .panel--mission {
-    top: 46px;
+    top: 38px;
   }
   .panel--mission.is-collapsed {
     width: auto;
     max-width: calc(100vw - 16px);
-    padding: 5px 12px 6px;
+    padding: 4px 10px 5px;
   }
   .mission-label { font-size: 8.5px; letter-spacing: 1.5px; }
   .mission-text { font-size: 11.5px; }
@@ -2610,4 +2610,353 @@ body.device-pc #btn-stand { margin-bottom: 0; }
   .win-burst { animation: none; }
   .win-ribbon { animation: none; }
   .overlay__title--win { animation: none; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   TRAINEE PROFILE, CHARACTER GENDER SELECT, COIN PERKS & RESULT BANNER
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* HUD trainee pill inside #room-panel */
+.room-trainee {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 4px 0 6px;
+  padding: 3px 8px;
+  background: rgba(116, 230, 214, 0.12);
+  border: 1px solid rgba(116, 230, 214, 0.35);
+  border-radius: 3px;
+  font-size: 11px;
+  color: #e9fffb;
+  max-width: 100%;
+}
+.room-trainee__gender {
+  font-weight: 800;
+  color: var(--gold);
+}
+.room-trainee__name {
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 170px;
+}
+
+.wallet-chip--clickable {
+  cursor: pointer;
+  transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
+}
+.wallet-chip--clickable:hover {
+  transform: translateY(-1px);
+  border-color: var(--gold);
+  background: rgba(247, 200, 90, 0.22);
+}
+
+.icon-btn--perks {
+  color: var(--gold);
+  border-color: rgba(247, 200, 90, 0.55);
+}
+.icon-btn--perks:hover {
+  background: rgba(247, 200, 90, 0.18);
+  border-color: var(--gold);
+}
+
+/* Trainee Registration & Character Select Modal */
+.overlay__box--profile {
+  max-width: 500px;
+}
+.profile-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 8px;
+  text-align: left;
+}
+.profile-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.profile-label {
+  font-family: var(--font-pix);
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--cyan);
+}
+.profile-input {
+  width: 100%;
+  font-size: 14px;
+  padding: 10px 12px;
+}
+.profile-err {
+  font-size: 12px;
+  color: #ff8b94;
+  font-weight: 600;
+}
+.profile-gender-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.profile-char {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 10px;
+  background: rgba(18, 14, 30, 0.85);
+  border: 2px solid #453a62;
+  border-radius: 6px;
+  color: var(--ink);
+  cursor: pointer;
+  transition: transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease, background 120ms ease;
+}
+.profile-char:hover {
+  transform: translateY(-2px);
+  border-color: #7d6ba8;
+}
+.profile-char.is-selected {
+  background: linear-gradient(180deg, rgba(116, 230, 214, 0.16), rgba(32, 24, 52, 0.92));
+  border-color: var(--cyan);
+  box-shadow: 0 0 18px rgba(116, 230, 214, 0.28);
+}
+.profile-char__canvas {
+  width: 76px;
+  height: 88px;
+  image-rendering: pixelated;
+  background: radial-gradient(circle at 50% 65%, rgba(116, 230, 214, 0.16), rgba(10, 8, 18, 0.65));
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+}
+.profile-char__title {
+  font-family: var(--font-pix);
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+}
+.profile-char.is-selected .profile-char__title {
+  color: var(--gold);
+}
+.profile-char__desc {
+  font-size: 11px;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.3;
+}
+
+/* Coin Perks Shop Modal */
+.overlay__box--perks {
+  max-width: 540px;
+}
+.perks-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  text-align: left;
+  flex-wrap: wrap;
+}
+.perks-wallet {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.perks-wallet__chip {
+  font-family: var(--font-pix);
+  font-size: 11px;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-weight: 700;
+}
+.perks-wallet__chip--coins {
+  background: rgba(247, 200, 90, 0.18);
+  border: 1px solid var(--gold);
+  color: var(--gold);
+}
+.perks-wallet__chip--xp {
+  background: rgba(116, 230, 214, 0.15);
+  border: 1px solid var(--cyan);
+  color: var(--cyan);
+}
+.perks-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 10px 0 14px;
+  text-align: left;
+}
+.perk-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  background: rgba(18, 14, 30, 0.88);
+  border: 2px solid #41365c;
+  border-radius: 5px;
+}
+.perk-card.is-owned {
+  border-color: #6fce8b;
+  background: linear-gradient(180deg, rgba(111, 206, 139, 0.14), rgba(18, 14, 30, 0.9));
+}
+.perk-card__top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.perk-card__icon {
+  font-size: 20px;
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+.perk-card__title {
+  font-family: var(--font-pix);
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #fff;
+}
+.perk-card__cost {
+  font-family: var(--font-pix);
+  font-size: 9.5px;
+  color: var(--gold);
+  margin-top: 2px;
+}
+.perk-card__desc {
+  font-size: 11.5px;
+  color: var(--muted);
+  line-height: 1.35;
+}
+.perk-card__btn {
+  width: 100%;
+  padding: 7px 10px;
+  font-family: var(--font-pix);
+  font-size: 10px;
+  font-weight: 700;
+  border-radius: 3px;
+  border: 1px solid #8a5f18;
+  background: linear-gradient(180deg, #ffe6a8, #f0b944);
+  color: #24180a;
+  cursor: pointer;
+}
+.perk-card__btn:hover:not(:disabled) {
+  background: linear-gradient(180deg, #fff2cc, #f7c85a);
+}
+.perk-card__btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  background: #2b243d;
+  border-color: #473c63;
+  color: #9f95b8;
+}
+.perk-card.is-owned .perk-card__btn {
+  background: rgba(111, 206, 139, 0.22);
+  border-color: #6fce8b;
+  color: #9ef0ac;
+  opacity: 1;
+}
+
+/* Victory / Results Student Name Banner */
+.win-student {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 4px 0 10px;
+  padding: 9px 14px;
+  background: linear-gradient(90deg, rgba(247, 200, 90, 0.18), rgba(116, 230, 214, 0.14));
+  border: 2px solid var(--gold);
+  border-radius: 5px;
+  box-shadow: 0 0 18px rgba(247, 200, 90, 0.22);
+}
+.win-student__main {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.win-student__badge {
+  font-family: var(--font-pix);
+  font-size: 9.5px;
+  padding: 3px 7px;
+  border-radius: 3px;
+  background: rgba(116, 230, 214, 0.2);
+  border: 1px solid var(--cyan);
+  color: #eafffb;
+}
+.win-student__name {
+  font-family: var(--font-pix);
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.5);
+}
+.win-student__code {
+  font-family: var(--font-pix);
+  font-size: 9.5px;
+  letter-spacing: 1px;
+  color: var(--gold);
+}
+
+@media (max-width: 600px) {
+  .perks-list {
+    grid-template-columns: 1fr;
+  }
+  .profile-gender-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   OUTDOOR EXIT CUTSCENE OVERLAY
+   ══════════════════════════════════════════════════════════════════════════ */
+.overlay--outro {
+  background: radial-gradient(circle at 50% 45%, rgba(28, 22, 48, 0.92), rgba(8, 6, 16, 0.98));
+  z-index: 95;
+}
+.outro-stage {
+  position: relative;
+  width: min(94vw, 760px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  background: rgba(16, 12, 28, 0.94);
+  border: 2px solid var(--gold);
+  border-radius: 8px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.72), 0 0 28px rgba(247, 200, 90, 0.25);
+}
+.outro-canvas {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  image-rendering: pixelated;
+  border: 2px solid #453a62;
+  border-radius: 4px;
+  background: #1a233a;
+  display: block;
+}
+.outro-caption {
+  font-family: var(--font-pix);
+  font-size: 11.5px;
+  letter-spacing: 0.6px;
+  color: #fff3d1;
+  text-align: center;
+  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.6);
+}
+.outro-skip {
+  position: absolute;
+  top: 22px;
+  right: 22px;
+  z-index: 2;
+  opacity: 0.9;
 }

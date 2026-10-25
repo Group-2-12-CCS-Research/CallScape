@@ -43,14 +43,38 @@ phone.
   (`#room-panel`) and the top-right **Mission** panel (`#mission-panel`) — can be clicked at any
   time to collapse their body into a compact header tab (`▾` / `▸`), freeing up screen space.
   Clicking again expands them.
-* **Roaming Student Colleagues & Crisp HiDPI Jargon Bubbles**: Up to 2 seated student agents at
-  a time stand up from their chairs, walk around the training floor aisles, pause at waypoints,
-  and share **17 contact-center jargon tips** (`NAME · JARGON`) that help players answer the
-  questions. Speech and thought bubbles render directly onto the main high-DPI `<canvas id="game">`
-  at native `devicePixelRatio` using crisp **`11px` / `13px` sans-serif typography** so text is
-  always sharp and readable.
+* **Roaming Student Colleagues, Proximity Jargon Timer & Mobile Vertical Mode**: Up to 2 seated
+  student agents at a time stand up from their chairs and walk around the training floor aisles
+  with **17 contact-center jargon tips** (`NAME · JARGON · ⏱ 5s`).
+  * **Proximity-Triggered Timer**: A roaming student's jargon bubble only appears when the player
+    walks **near** them (within ~3 tiles), starting a **4.8-second countdown timer** (with a
+    visible `⏱` badge and golden progress bar) that hides automatically when the timer finishes
+    or when the player walks away.
+  * **Android / Mobile Vertical Mode Fix**: When mobile / vertical portrait mode is detected,
+    the top HUD panels auto-collapse into compact tabs and the jargon bubble renders as a compact,
+    translucent banner docked in the top safe zone (`y = 48px`) so it never blocks the player,
+    the room floor, or the bottom touch controls.
+* **Student Check-In & Male / Female Character Selection**: Clicking **New Game** opens the
+  **Student Check-In** modal where the student enters their **Student Name** (e.g.,
+  *Juan Dela Cruz — G11 CCS-A*) and selects between a **♂ Male** or **♀ Female**
+  pixel-art character (with custom walking, profile, and seated animations).
+* **Outdoor Urban Exit Cutscene (`#outro`)**: When the student steps through the unlocked Exit Door,
+  an animated pixel-art cutscene plays before the Results Screen — showing the student's chosen
+  character (and Robi) walking out of the CCS Building onto a golden-hour urban sidewalk lined
+  with swaying green trees, flying and perched birds (`♪`), and friendly sidewalk cats (`meow~ ♥`).
+* **Verified Student Name on Results Screen**: After the outdoor exit animation completes (or is
+  skipped via `Skip ▸`), the **Results Screen** prominently displays the **Student Name**,
+  **Character Gender Badge (`♂ Male` / `♀ Female`)**, and a unique **Verification Code**
+  (`VERIFIED · CCS-XXXXX`) so screenshots cannot be shared between students.
+* **Coin Perks Shop (`◎` Perks)**: Students start with **15 Starter Coins (`◎ 15`)** and earn
+  more from answering questions, streaks, and achievements. Clicking **`◎`** in the top-right bar
+  (or clicking the `◎` coin wallet chip / pressing **`P`**) opens the **Coin Perks Shop**:
+  * **☕ Iced Caramel Brew (`15 ◎`)** — Permanently boosts walking speed by **+25%** across all rooms.
+  * **⚡ XP Energy Pack (`15 ◎`)** — Instantly grants **+30 EXP** (enough for 3 Letter Hints; repeatable).
+  * **🧭 Robi Radar Compass (`20 ◎`)** — Projects a glowing golden guide arrow on the floor pointing to the next objective.
+  * **🎧 Pro Gold Headset (`25 ◎`)** — Equips a gleaming Gold Headset on the player sprite and grants **+5 Bonus XP** on every correct answer.
 * **Robi Companion Robot & Full Progression**: Animated pixel-art companion robot, **LV 1–LV 7**
-  XP curve, coins, answer streaks, and 8 achievements.
+  XP curve, coins, answer streaks, and 11 achievements.
 
 ---
 

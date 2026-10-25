@@ -1413,6 +1413,14 @@
   const state = {
     version: 2,
     roomId: 'lab',
+    playerName: 'Player',   // student name entered at New Game check-in
+    playerGender: 'male',   // 'male' | 'female'
+    perks: {                // coin perks purchased during this run
+      speed: false,
+      radar: false,
+      headset: false,
+      xpPacks: 0
+    },
     clues: [],              // string[] of ITEMS keys
     solved: {},             // { questionId: true }
     attempts: {},           // { questionId: { correct: n, wrong: n } }
@@ -1476,6 +1484,9 @@
       const payload = {
         version: state.version,
         roomId: state.roomId,
+        playerName: state.playerName || 'Player',
+        playerGender: state.playerGender === 'female' ? 'female' : 'male',
+        perks: Object.assign({ speed: false, radar: false, headset: false, xpPacks: 0 }, state.perks || {}),
         clues: state.clues,
         solved: state.solved,
         attempts: state.attempts,
@@ -1520,6 +1531,17 @@
 
   /** Copy a saved payload into live state (does not touch preferences). */
   function applySave(data) {
+    if (typeof data.playerName === 'string' && data.playerName.trim()) {
+      state.playerName = data.playerName.trim();
+    }
+    state.playerGender = data.playerGender === 'female' ? 'female' : 'male';
+    const pk = data.perks && typeof data.perks === 'object' ? data.perks : {};
+    state.perks = {
+      speed: !!pk.speed,
+      radar: !!pk.radar,
+      headset: !!pk.headset,
+      xpPacks: Number(pk.xpPacks) || 0
+    };
     state.clues = Array.isArray(data.clues) ? data.clues.filter(k => ITEMS[k]) : [];
     state.solved = data.solved && typeof data.solved === 'object' ? data.solved : {};
     state.attempts = data.attempts && typeof data.attempts === 'object' ? data.attempts : {};
@@ -1555,7 +1577,9 @@
         promptOn: state.promptOn,
         joystickSide: state.joystickSide,
         textSize: state.textSize,
-        device: state.device
+        device: state.device,
+        playerName: state.playerName,
+        playerGender: state.playerGender
       }));
     } catch (err) {}
   }
@@ -1572,6 +1596,8 @@
       if (s.joystickSide === 'left' || s.joystickSide === 'right') state.joystickSide = s.joystickSide;
       if (s.textSize === 'normal' || s.textSize === 'large') state.textSize = s.textSize;
       if (s.device === 'pc' || s.device === 'phone') state.device = s.device;
+      if (typeof s.playerName === 'string' && s.playerName.trim()) state.playerName = s.playerName.trim();
+      if (s.playerGender === 'male' || s.playerGender === 'female') state.playerGender = s.playerGender;
     } catch (err) {}
   }
 
@@ -1590,6 +1616,11 @@
     if (el.joy) el.joy.setAttribute('aria-hidden', phone ? 'false' : 'true');
     if (el.btnAct) el.btnAct.setAttribute('aria-label',
       phone ? 'Interact with the object in front of you' : 'Interact with object (E)');
+    if (phone && !_mobileAutoCollapsed) {
+      _mobileAutoCollapsed = true;
+      toggleRoomPanel(true);
+      toggleMissionPanel(true);
+    }
   }
 
   /** Push preference values into the DOM (body classes + widget states). */
@@ -1636,6 +1667,9 @@
     const mins = Math.floor((data.elapsed || 0) / 60);
     const secs = Math.round((data.elapsed || 0) % 60);
     const bits = [];
+    if (data.playerName) {
+      bits.push(data.playerName + ' (' + (data.playerGender === 'female' ? '♀' : '♂') + ')');
+    }
     if (data.completed) bits.push('completed');
     else if (data.doorOpen) bits.push('exit unlocked');
     else bits.push('in progress');
@@ -2257,6 +2291,13 @@
     const isMove = !!MOVE_KEYS[e.code];
     if (isMove || e.code === 'Space') e.preventDefault();
 
+    if (outroActive) {
+      if (e.code === 'Escape' || e.code === 'Space' || e.code === 'Enter') {
+        finishExitCutscene();
+      }
+      return;
+    }
+
     if (isMove) {
       setKey(e.code, true);
       if (!Dialogue.open && !state.paused) player.dir = MOVE_KEYS[e.code];
@@ -2265,11 +2306,22 @@
 
     if (e.code === 'Escape') {
       if (Book.open) { Book.close(); return; }
+      if (el.perksModal && !el.perksModal.hidden) { closePerksModal(); return; }
+      if (el.profileModal && !el.profileModal.hidden) { closeProfileModal(); return; }
       if (!el.settings.hidden) { closeSettings(); return; }
       if (Dialogue.open) { Dialogue.close(); return; }
       if (!el.journal.hidden) { closeJournal(); return; }
       if (!el.menu.hidden || !el.complete.hidden) return;
       if (state.started && !roundOver()) togglePause();
+      return;
+    }
+
+    /* P opens or closes the Coin Perks Shop during a run. */
+    if (e.code === 'KeyP') {
+      if (el.perksModal && !el.perksModal.hidden) { closePerksModal(); return; }
+      if (state.started && !roundOver() && !Dialogue.open && !Book.open) {
+        openPerksModal();
+      }
       return;
     }
 
@@ -2512,13 +2564,14 @@
       // Normalising prevents faster diagonal travel; the magnitude lets the
       // joystick walk slowly when it is only pushed a little.
       const len = Math.hypot(move.x, move.y) || 1;
-      const speed = PLAYER_SPEED * Math.min(1, len);
+      const speedMul = (state.perks && state.perks.speed) ? 1.25 : 1;
+      const speed = PLAYER_SPEED * speedMul * Math.min(1, len);
       const vx = (move.x / len) * speed * dt;
       const vy = (move.y / len) * speed * dt;
       moveWithCollision(vx, vy);
 
-      player.animT += dt;
-      player.stepT += dt;
+      player.animT += dt * speedMul;
+      player.stepT += dt * speedMul;
       if (player.stepT > 0.31) { player.stepT = 0; Sound.step(); }
     } else {
       player.animT = 0;
@@ -2895,6 +2948,8 @@
     if (roamer) {
       roamer.thought = pickJargonIndex(roamer.thought);
       roamer.thoughtT = 0;
+      roamer.nearPlayer = true;
+      roamer.jargonTimer = 4.8;
       roamer.pauseT = Math.max(roamer.pauseT || 0, 4.0);
       return BOT_LINES[roamer.thought];
     }
@@ -2936,6 +2991,8 @@
       if (roamer) {
         roamer.thought = pickJargonIndex(roamer.thought);
         roamer.thoughtT = 0;
+        roamer.nearPlayer = true;
+        roamer.jargonTimer = 4.8;
         roamer.pauseT = 4.5;
         Sound.interact();
         const line = BOT_LINES[roamer.thought];
@@ -3031,9 +3088,9 @@
        `exitRearm` requires the player to leave the doorway first, so the panel
        never re-opens on the frame you dismiss it. Rewards are never re-paid —
        those only happen in showComplete(). */
-    if (state.afterWin && exitRearm && el.complete.hidden && !state.paused) {
+    if (state.afterWin && exitRearm && el.complete.hidden && (!el.outro || el.outro.hidden) && !state.paused) {
       exitRearm = false;
-      showCompleteScreen();
+      playExitCutscene();
     }
   }
 
@@ -3054,7 +3111,756 @@
     cam.shake = 5;
     saveLocal();
     updateMission();
+    playExitCutscene();
+  }
+
+  /* ── Outdoor Urban Exit Cutscene (Trees, Birds & Cats) ────────────────── */
+  let outroTimer = 0;
+  let outroRaf = 0;
+  let outroActive = false;
+  let outroLastTs = 0;
+  const FAREWELL_DURATION = 2.6;
+  const OUTRO_DURATION = 6.2;
+
+  function playExitCutscene() {
+    state.paused = true;
+    clearMovement();
+    renderStats();
+    renderCompletionPanel();
+    if (!el.outro || !el.outroCanvas) {
+      showCompleteScreen();
+      return;
+    }
+    outroActive = true;
+    outroTimer = 0;
+    outroLastTs = 0;
+    el.complete.hidden = true;
+    el.pause.hidden = true;
+    el.menu.hidden = true;
+    el.outro.hidden = false;
+    drawExitCutsceneFrame(0);
+
+    if (typeof requestAnimationFrame === 'function') {
+      if (outroRaf) cancelAnimationFrame(outroRaf);
+      const tick = function (ts) {
+        if (!outroActive) return;
+        if (!outroLastTs) outroLastTs = ts;
+        const dt = Math.min(0.1, Math.max(0.008, (ts - outroLastTs) / 1000));
+        outroLastTs = ts;
+        outroTimer += dt;
+        drawExitCutsceneFrame(outroTimer);
+        if (outroTimer >= OUTRO_DURATION) {
+          finishExitCutscene();
+          return;
+        }
+        outroRaf = requestAnimationFrame(tick);
+      };
+      outroRaf = requestAnimationFrame(tick);
+    }
+  }
+
+  function finishExitCutscene() {
+    outroActive = false;
+    if (outroRaf && typeof cancelAnimationFrame === 'function') {
+      cancelAnimationFrame(outroRaf);
+      outroRaf = 0;
+    }
+    if (el.outro) el.outro.hidden = true;
     showCompleteScreen();
+  }
+
+  /** Draws the authentic Robi robot pet sprite (matching `drawRobot`) for the indoor farewell cutscene. */
+  function drawRobiCutsceneSprite(g, left, top, t) {
+    const P = function (dx, dy, w, h, color) {
+      g.fillStyle = color;
+      g.fillRect(left + dx, top + dy, w, h);
+    };
+    const shell = '#9fe3f0';
+    const shellDark = '#4f9db2';
+    const shellLite = '#d6f7fd';
+    const metal = '#2b3550';
+    const metalLite = '#465272';
+    const gold = '#f7c85a';
+
+    // 1px dark silhouette
+    P(1, 1, 14, 8, '#16323f');
+    P(2, 8, 12, 9, '#16323f');
+    P(1, 16, 14, 4, '#16323f');
+
+    // hover treads
+    P(2, 16, 12, 3, metal);
+    P(3, 16, 2, 3, metalLite);
+    P(9, 16, 2, 3, metalLite);
+    P(7, 17, 2, 1, gold);
+
+    // body + chest panel
+    P(3, 9, 10, 7, shell);
+    P(3, 9, 10, 1, shellLite);
+    P(3, 15, 10, 1, shellDark);
+    P(4, 11, 8, 3, '#12203a');
+    P(6, 12, 4, 1, (Math.sin(t * 6) > 0) ? gold : '#b9832a');
+    P(5, 14, 6, 1, shellDark);
+
+    // head + visor
+    P(2, 2, 12, 7, shell);
+    P(2, 2, 12, 1, shellLite);
+    P(2, 8, 12, 1, shellDark);
+    P(3, 4, 10, 4, '#12203a');
+    P(3, 4, 10, 1, '#1c3157');
+
+    // happy waving eyes & smile
+    P(5, 5, 2, 2, '#c8fbff');
+    P(9, 5, 2, 2, '#c8fbff');
+    P(5, 7, 2, 1, '#8ef7ff');
+    P(9, 7, 2, 1, '#8ef7ff');
+    P(7, 8, 3, 1, '#0e1a2c');
+    P(6, 7, 1, 1, '#0e1a2c');
+    P(11, 7, 1, 1, '#0e1a2c');
+
+    // antenna with blinking golden bulb
+    P(7, 0, 2, 2, metalLite);
+    P(7, -2, 2, 2, (Math.sin(t * 7) > -0.2) ? gold : '#8a5f18');
+
+    // arms: left arm relaxed, right arm waving goodbye!
+    const waveUp = Math.floor(t * 7) % 2;
+    P(-1, 10, 3, 4, shell);
+    P(0, 14, 2, 2, shellLite);
+    P(14, 4 - waveUp, 3, 2, shell);
+    P(14, 1 - waveUp, 2, 4, shellLite);
+    P(15, -waveUp, 2, 2, '#e8fbff');
+  }
+
+  /** Scene 1 of the exit cutscene: Character says goodbye to Robi inside the building before leaving. */
+  function drawIndoorFarewellScene(octx, W, H, t, pName) {
+    // 1. CCS Training Floor Interior Wall & Wainscoting
+    octx.fillStyle = '#252138';
+    octx.fillRect(0, 0, W, 152);
+    octx.fillStyle = '#312b49';
+    octx.fillRect(0, 14, W, 110);
+    // Warm wooden wainscoting & trim along the lower wall
+    octx.fillStyle = '#5c3f2e';
+    octx.fillRect(0, 118, W, 34);
+    octx.fillStyle = '#7a543d';
+    octx.fillRect(0, 116, W, 4);
+    for (let px = 12; px < 320; px += 38) {
+      octx.fillStyle = '#4a3123';
+      octx.fillRect(px, 124, 30, 22);
+      octx.fillStyle = '#684734';
+      octx.fillRect(px + 2, 126, 26, 18);
+    }
+
+    // 2. Indoor Training Floor (warm checkerboard parquet tiles)
+    octx.fillStyle = '#75533c';
+    octx.fillRect(0, 152, W, H - 152);
+    for (let fy = 152; fy < H; fy += 18) {
+      for (let fx = 0; fx < W; fx += 28) {
+        octx.fillStyle = (((fx / 28) + (fy / 18)) % 2 === 0) ? '#856046' : '#6b4b35';
+        octx.fillRect(fx, fy, 28, 18);
+        octx.fillStyle = 'rgba(0, 0, 0, 0.14)';
+        octx.fillRect(fx, fy + 17, 28, 1);
+      }
+    }
+
+    // 3. CCS Wall Poster & Indoor Potted Plant on the left
+    octx.fillStyle = '#192336';
+    octx.fillRect(46, 36, 114, 52);
+    octx.fillStyle = '#f7c85a';
+    octx.fillRect(48, 38, 110, 48);
+    octx.fillStyle = '#1b283c';
+    octx.fillRect(50, 40, 106, 44);
+    octx.fillStyle = '#74e6d6';
+    octx.font = 'bold 8px monospace';
+    octx.textAlign = 'center';
+    octx.textBaseline = 'middle';
+    octx.fillText('CCS TRAINING FLOOR', 103, 54);
+    octx.fillStyle = '#ffe596';
+    octx.font = '7px monospace';
+    octx.fillText('ALL STAGES CLEARED ★', 103, 70);
+
+    // Potted office plant at x = 84, y = 148
+    octx.fillStyle = '#9c4e37';
+    octx.fillRect(72, 136, 24, 20);
+    octx.fillStyle = '#b86147';
+    octx.fillRect(70, 133, 28, 5);
+    octx.fillStyle = '#2d6a45';
+    octx.fillRect(68, 112, 32, 22);
+    octx.fillStyle = '#4ea167';
+    octx.fillRect(72, 106, 24, 18);
+    octx.fillStyle = '#7cd175';
+    octx.fillRect(76, 102, 16, 10);
+
+    // 4. Open Building Exit Door on the Right (x = 342..428) with Golden Sunlight Streaming In
+    octx.fillStyle = '#3d281c';
+    octx.fillRect(336, 44, 96, 112);
+    // Outdoor golden sky & green trees visible through the open doorway
+    octx.fillStyle = '#eb9f68';
+    octx.fillRect(344, 52, 80, 56);
+    octx.fillStyle = '#ffe999';
+    octx.fillRect(392, 62, 16, 16);
+    octx.fillStyle = '#3f7d4c';
+    octx.fillRect(344, 104, 80, 26);
+    octx.fillStyle = '#9996a8';
+    octx.fillRect(344, 130, 80, 24);
+    // Sliding glass door panels open to the sides
+    octx.fillStyle = 'rgba(116, 230, 214, 0.35)';
+    octx.fillRect(344, 52, 14, 102);
+    octx.fillRect(410, 52, 14, 102);
+    // Glowing "EXIT ▸" sign above the doorway
+    octx.fillStyle = '#14261c';
+    octx.fillRect(360, 24, 48, 14);
+    octx.fillStyle = '#6fce8b';
+    octx.fillRect(362, 26, 44, 10);
+    octx.fillStyle = '#0d2615';
+    octx.font = 'bold 8px monospace';
+    octx.fillText('EXIT ▸', 384, 31);
+
+    // Warm sunlight beam spilling across the indoor floor from the open door
+    octx.fillStyle = 'rgba(255, 230, 150, 0.18)';
+    octx.beginPath();
+    octx.moveTo(344, 152);
+    octx.lineTo(424, 152);
+    octx.lineTo(468, 242);
+    octx.lineTo(286, 242);
+    octx.closePath();
+    octx.fill();
+
+    // 5. Robi the Robot Pet hovering inside at (168, 198) waving goodbye!
+    const robiX = 168;
+    const robiHover = Math.round(Math.sin(t * 5) * 3);
+    const robiY = 198 + robiHover;
+    // Thruster glow & floor shadow under Robi
+    octx.fillStyle = 'rgba(116, 230, 214, 0.22)';
+    octx.fillRect(robiX - 18, 206, 36, 8);
+    octx.fillStyle = 'rgba(12, 8, 22, 0.36)';
+    octx.fillRect(robiX - 12, 208, 24, 5);
+    octx.save();
+    octx.translate(robiX, robiY);
+    octx.scale(2, 2);
+    drawRobiCutsceneSprite(octx, -8, -18, t);
+    octx.restore();
+
+    // Floating pixel heart above Robi
+    const heartY = robiY - 46 - Math.round(Math.abs(Math.sin(t * 4)) * 4);
+    octx.fillStyle = '#ff7b9c';
+    octx.font = 'bold 11px monospace';
+    octx.fillText('♥', robiX + 18, heartY);
+
+    // 6. Student Character: waves goodbye to Robi (0..1.75s), then walks out the exit door (1.75..2.6s)
+    const leaving = t >= 1.75;
+    const leaveProgress = leaving ? Math.min(1, (t - 1.75) / 0.85) : 0;
+    const charX = Math.round(252 + leaveProgress * 134);
+    const charY = Math.round(208 - leaveProgress * 36);
+    const charDir = leaving ? 'right' : 'left';
+    const charFrame = leaving ? (Math.floor(t * 9) % 2) : (Math.floor(t * 5) % 2);
+
+    octx.fillStyle = 'rgba(12, 8, 22, 0.36)';
+    octx.fillRect(charX - 14, charY + 2, 28, 5);
+    octx.save();
+    octx.translate(charX, charY);
+    octx.scale(2, 2);
+    drawCharacterSprite(
+      octx,
+      -9,
+      -24,
+      charDir,
+      charFrame,
+      state.playerGender || 'male',
+      !!(state.perks && state.perks.headset)
+    );
+    octx.restore();
+
+    // 7. Farewell Dialogue Bubbles between Character and Robi
+    if (t < 1.85) {
+      const msg1 = 'Bye Robi! Thanks for all your help!';
+      octx.font = 'bold 8px monospace';
+      const bw1 = Math.max(154, octx.measureText(msg1).width + 16);
+      const bx1 = Math.round(charX - bw1 / 2 + 16);
+      const by1 = charY - 68;
+      octx.fillStyle = 'rgba(18, 14, 30, 0.92)';
+      octx.fillRect(bx1, by1, bw1, 16);
+      octx.fillStyle = '#f7c85a';
+      octx.fillRect(bx1, by1, bw1, 1);
+      octx.fillRect(bx1, by1 + 15, bw1, 1);
+      octx.fillStyle = '#ffffff';
+      octx.fillText(msg1, bx1 + bw1 / 2, by1 + 8);
+    }
+    if (t >= 0.45) {
+      const msg2 = 'Bye-bye, ' + pName + '! Go shine out there! ♥';
+      octx.font = 'bold 8px monospace';
+      const bw2 = Math.max(164, octx.measureText(msg2).width + 16);
+      const bx2 = Math.max(10, Math.round(robiX - bw2 / 2 - 6));
+      const by2 = robiY - 64;
+      octx.fillStyle = 'rgba(16, 28, 42, 0.94)';
+      octx.fillRect(bx2, by2, bw2, 16);
+      octx.fillStyle = '#74e6d6';
+      octx.fillRect(bx2, by2, bw2, 1);
+      octx.fillRect(bx2, by2 + 15, bw2, 1);
+      octx.fillStyle = '#d6f7fd';
+      octx.fillText(msg2, bx2 + bw2 / 2, by2 + 8);
+    }
+
+    if (el.outroCaption) {
+      el.outroCaption.textContent = pName + ' says goodbye to Robi before leaving the CCS building...';
+    }
+  }
+
+  function drawExitCutsceneFrame(rawT) {
+    const cvs = el.outroCanvas;
+    if (!cvs || !cvs.getContext) return;
+    const octx = cvs.getContext('2d');
+    if (!octx) return;
+    octx.imageSmoothingEnabled = false;
+    const W = cvs.width || 480;
+    const H = cvs.height || 270;
+    const pName = (state.playerName || 'Player').trim();
+
+    // Part 1 (0.0s .. 2.6s): Indoor farewell animation where the character says bye to Robi!
+    if (rawT < FAREWELL_DURATION) {
+      drawIndoorFarewellScene(octx, W, H, rawT, pName);
+      return;
+    }
+
+    // Part 2 (2.6s .. 6.2s): Outdoor urban scenery animation (NO robot pet outside)
+    const t = Math.max(0, rawT - FAREWELL_DURATION);
+
+    // 1. Golden-hour urban sunset sky bands
+    const skyBands = [
+      { y: 0,   h: 34, c: '#1c2442' },
+      { y: 34,  h: 32, c: '#2e345e' },
+      { y: 66,  h: 30, c: '#54436c' },
+      { y: 96,  h: 28, c: '#86576c' },
+      { y: 124, h: 26, c: '#bf7766' },
+      { y: 150, h: 28, c: '#eb9f68' }
+    ];
+    for (let i = 0; i < skyBands.length; i++) {
+      octx.fillStyle = skyBands[i].c;
+      octx.fillRect(0, skyBands[i].y, W, skyBands[i].h);
+    }
+
+    // Glowing afternoon sun
+    const sunX = 392, sunY = 56;
+    octx.fillStyle = 'rgba(255, 224, 138, 0.16)';
+    octx.fillRect(sunX - 28, sunY - 28, 56, 56);
+    octx.fillStyle = 'rgba(255, 224, 138, 0.32)';
+    octx.fillRect(sunX - 18, sunY - 18, 36, 36);
+    octx.fillStyle = '#ffe999';
+    octx.fillRect(sunX - 11, sunY - 11, 22, 22);
+    octx.fillStyle = '#fff9d6';
+    octx.fillRect(sunX - 7, sunY - 7, 14, 14);
+
+    // Drifting pixel clouds
+    const clouds = [
+      { bx: 130, y: 32, w: 46, s: 5 },
+      { bx: 255, y: 22, w: 58, s: 3.6 },
+      { bx: 340, y: 44, w: 40, s: 4.4 }
+    ];
+    for (let i = 0; i < clouds.length; i++) {
+      const c = clouds[i];
+      const cx = Math.round((c.bx + t * c.s) % (W + 80)) - 40;
+      octx.fillStyle = '#f7d5b0';
+      octx.fillRect(cx, c.y, c.w, 8);
+      octx.fillRect(cx + 8, c.y - 5, c.w - 16, 6);
+      octx.fillStyle = '#d49a89';
+      octx.fillRect(cx + 2, c.y + 6, c.w - 4, 3);
+    }
+
+    // 2. Distant Urban City Skyline (skyscrapers & mid-ground buildings)
+    const farTowers = [
+      { x: 106, y: 74, w: 38, h: 104, c: '#272643' },
+      { x: 142, y: 58, w: 46, h: 120, c: '#23223d' },
+      { x: 186, y: 82, w: 36, h: 96,  c: '#2c294a' },
+      { x: 220, y: 48, w: 52, h: 130, c: '#242340' },
+      { x: 270, y: 68, w: 44, h: 110, c: '#2c2a4a' },
+      { x: 312, y: 54, w: 48, h: 124, c: '#23223d' },
+      { x: 358, y: 76, w: 42, h: 102, c: '#2b2847' },
+      { x: 398, y: 64, w: 50, h: 114, c: '#252442' },
+      { x: 446, y: 80, w: 38, h: 98,  c: '#2c294a' }
+    ];
+    for (let i = 0; i < farTowers.length; i++) {
+      const b = farTowers[i];
+      octx.fillStyle = b.c;
+      octx.fillRect(b.x, b.y, b.w, b.h);
+      // Rooftop antenna / details
+      if (i % 2 === 1) {
+        octx.fillStyle = '#3f3b63';
+        octx.fillRect(b.x + Math.floor(b.w / 2) - 1, b.y - 12, 2, 12);
+        octx.fillStyle = (Math.floor(t * 2 + i) % 2 === 0) ? '#ff6b6b' : '#7a3340';
+        octx.fillRect(b.x + Math.floor(b.w / 2) - 1, b.y - 14, 2, 2);
+      }
+      // Lit pixel office windows
+      for (let wy = b.y + 8; wy < 166; wy += 10) {
+        for (let wx = b.x + 6; wx < b.x + b.w - 8; wx += 9) {
+          if (((wx * 7 + wy * 13 + i) % 5) !== 0) {
+            octx.fillStyle = ((wx + wy) % 3 === 0) ? '#ffe08a' : '#74e6d6';
+            octx.fillRect(wx, wy, 4, 5);
+          }
+        }
+      }
+    }
+
+    // Mid-ground urban apartment & corner cafe on the right
+    octx.fillStyle = '#3b3759';
+    octx.fillRect(114, 104, 88, 72);
+    octx.fillStyle = '#4c466e';
+    octx.fillRect(114, 100, 88, 5);
+    for (let wy = 112; wy <= 152; wy += 16) {
+      for (let wx = 124; wx <= 184; wx += 18) {
+        octx.fillStyle = '#26233b';
+        octx.fillRect(wx - 1, wy - 1, 12, 11);
+        octx.fillStyle = '#ffdf8e';
+        octx.fillRect(wx, wy, 10, 9);
+      }
+    }
+
+    // Corner urban book/coffee shop
+    octx.fillStyle = '#473954';
+    octx.fillRect(334, 114, 114, 62);
+    octx.fillStyle = '#634d70';
+    octx.fillRect(332, 110, 118, 5);
+    // Striped shop awning
+    for (let ax = 338; ax < 442; ax += 8) {
+      octx.fillStyle = ((ax / 8) % 2 === 0) ? '#d9625b' : '#f5ebd6';
+      octx.fillRect(ax, 142, 4, 8);
+      octx.fillStyle = '#f5ebd6';
+      octx.fillRect(ax + 4, 142, 4, 8);
+    }
+    // Warm shop window
+    octx.fillStyle = '#ffe6a3';
+    octx.fillRect(344, 152, 64, 18);
+    octx.fillStyle = '#80533b';
+    octx.fillRect(416, 148, 18, 28);
+
+    // 3. Grassy Park Boulevard Strip, Sidewalk & Urban Street
+    // Grass strip behind sidewalk
+    octx.fillStyle = '#2d5e3e';
+    octx.fillRect(108, 172, W - 108, 20);
+    octx.fillStyle = '#3f7d4c';
+    octx.fillRect(108, 172, W - 108, 6);
+    // Decorative bushes & flowers along the grass strip
+    const flowerX = [125, 168, 204, 274, 316, 366, 404, 456];
+    for (let i = 0; i < flowerX.length; i++) {
+      const fx = flowerX[i];
+      octx.fillStyle = '#254f34';
+      octx.fillRect(fx - 5, 177, 10, 7);
+      octx.fillStyle = '#499157';
+      octx.fillRect(fx - 4, 175, 8, 6);
+      octx.fillStyle = (i % 2 === 0) ? '#ffd166' : '#ff7b9c';
+      octx.fillRect(fx - 2, 176, 2, 2);
+      octx.fillRect(fx + 2, 178, 2, 2);
+    }
+
+    // Paved urban sidewalk
+    octx.fillStyle = '#9996a8';
+    octx.fillRect(0, 192, W, 42);
+    octx.fillStyle = '#b4b1c2';
+    octx.fillRect(0, 192, W, 5);
+    // Sidewalk slab joints
+    octx.fillStyle = '#7e7b8f';
+    for (let sx = 16; sx < W; sx += 36) {
+      octx.fillRect(sx, 192, 2, 42);
+    }
+    octx.fillRect(0, 212, W, 1);
+    // Street curb
+    octx.fillStyle = '#68657a';
+    octx.fillRect(0, 234, W, 6);
+
+    // City asphalt street & white lane markings
+    octx.fillStyle = '#262636';
+    octx.fillRect(0, 240, W, 30);
+    octx.fillStyle = '#1d1d2b';
+    octx.fillRect(0, 240, W, 3);
+    octx.fillStyle = '#e8e4d8';
+    for (let lx = 18; lx < W; lx += 52) {
+      octx.fillRect(lx, 254, 26, 3);
+    }
+
+    // 4. CCS Campus Building Exit on the Left (x: 0..112)
+    octx.fillStyle = '#3d455e';
+    octx.fillRect(0, 22, 110, 172);
+    octx.fillStyle = '#4f5978';
+    octx.fillRect(0, 22, 106, 170);
+    // Brick/stone horizontal bands
+    octx.fillStyle = '#353c52';
+    for (let by = 36; by < 120; by += 18) {
+      octx.fillRect(0, by, 106, 2);
+    }
+    // Upper campus windows
+    for (let wy = 42; wy <= 68; wy += 24) {
+      for (let wx = 12; wx <= 76; wx += 30) {
+        octx.fillStyle = '#22293a';
+        octx.fillRect(wx - 2, wy - 2, 22, 16);
+        octx.fillStyle = '#74e6d6';
+        octx.fillRect(wx, wy, 18, 12);
+        octx.fillStyle = '#b8fff3';
+        octx.fillRect(wx + 2, wy + 2, 5, 8);
+      }
+    }
+    // Illuminated "CCS CENTER" sign board
+    octx.fillStyle = '#182030';
+    octx.fillRect(10, 96, 88, 18);
+    octx.fillStyle = '#74e6d6';
+    octx.fillRect(12, 98, 84, 14);
+    octx.fillStyle = '#14222e';
+    octx.fillRect(14, 100, 80, 10);
+    octx.font = 'bold 8px monospace';
+    octx.textAlign = 'center';
+    octx.textBaseline = 'middle';
+    octx.fillStyle = '#74e6d6';
+    octx.fillText('CCS CENTER', 54, 105);
+
+    // Entrance canopy awning
+    octx.fillStyle = '#2a3147';
+    octx.fillRect(6, 118, 106, 10);
+    octx.fillStyle = '#f7c85a';
+    octx.fillRect(6, 126, 106, 3);
+
+    // Double glass exit doors (sliding open as student steps out)
+    octx.fillStyle = '#171c2b';
+    octx.fillRect(30, 130, 56, 62);
+    // Warm interior lobby glow
+    octx.fillStyle = '#ffe596';
+    octx.fillRect(34, 134, 48, 58);
+    const doorSlide = Math.min(18, Math.round(Math.min(1, t / 0.55) * 18));
+    octx.fillStyle = '#67b7d1';
+    octx.fillRect(34, 134, 24 - doorSlide, 58);
+    octx.fillRect(58 + doorSlide, 134, 24 - doorSlide, 58);
+    octx.fillStyle = '#2b334a';
+    octx.fillRect(30, 130, 56, 4);
+
+    // 5. Wooden Park Bench & Vintage Urban Streetlamps
+    // Bench at x: 222, y: 170
+    const bx = 222, by = 171;
+    octx.fillStyle = '#3b2416';
+    octx.fillRect(bx + 4, by + 14, 4, 9);
+    octx.fillRect(bx + 38, by + 14, 4, 9);
+    octx.fillStyle = '#8c5833';
+    octx.fillRect(bx, by + 6, 46, 5);
+    octx.fillRect(bx, by + 12, 46, 5);
+    octx.fillStyle = '#b57647';
+    octx.fillRect(bx + 1, by + 7, 44, 2);
+    octx.fillRect(bx + 2, by + 13, 42, 2);
+
+    // Urban streetlamps at x: 184 and x: 356
+    const lamps = [184, 356];
+    for (let i = 0; i < lamps.length; i++) {
+      const lx = lamps[i];
+      octx.fillStyle = '#2b2d3c';
+      octx.fillRect(lx - 3, 186, 6, 8);
+      octx.fillRect(lx - 1, 126, 3, 62);
+      octx.fillRect(lx - 6, 124, 13, 3);
+      // Warm streetlamp glow
+      octx.fillStyle = 'rgba(255, 230, 140, 0.22)';
+      octx.fillRect(lx - 12, 124, 25, 18);
+      octx.fillStyle = '#ffe999';
+      octx.fillRect(lx - 4, 127, 9, 6);
+    }
+
+    // 6. Lush Urban Trees (3 trees with swaying pixel canopies & falling leaves)
+    const trees = [
+      { x: 146, y: 188, scale: 1.0, phase: 0.0 },
+      { x: 292, y: 188, scale: 1.12, phase: 1.7 },
+      { x: 434, y: 188, scale: 0.96, phase: 3.1 }
+    ];
+    for (let i = 0; i < trees.length; i++) {
+      const tr = trees[i];
+      const sway = Math.round(Math.sin(t * 2.3 + tr.phase) * 2);
+      // Planter border
+      octx.fillStyle = '#5c586e';
+      octx.fillRect(tr.x - 14, tr.y - 2, 28, 6);
+      // Trunk & branches
+      octx.fillStyle = '#543524';
+      octx.fillRect(tr.x - 5, tr.y - 44, 10, 44);
+      octx.fillStyle = '#734a33';
+      octx.fillRect(tr.x - 3, tr.y - 42, 4, 40);
+      octx.fillRect(tr.x - 11, tr.y - 34, 7, 4);
+      octx.fillRect(tr.x + 4, tr.y - 38, 8, 4);
+      // Layered pixel foliage canopy
+      const cx = tr.x + sway;
+      const cy = tr.y - 58;
+      octx.fillStyle = '#1e4730';
+      octx.fillRect(cx - 28, cy + 4, 56, 22);
+      octx.fillRect(cx - 22, cy - 10, 44, 18);
+      octx.fillStyle = '#2e6b45';
+      octx.fillRect(cx - 26, cy + 1, 52, 18);
+      octx.fillRect(cx - 20, cy - 12, 40, 16);
+      octx.fillRect(cx - 12, cy - 20, 24, 12);
+      octx.fillStyle = '#4b945b';
+      octx.fillRect(cx - 22, cy - 2, 44, 12);
+      octx.fillRect(cx - 16, cy - 14, 32, 12);
+      octx.fillRect(cx - 9, cy - 21, 18, 8);
+      octx.fillStyle = '#7cd175';
+      octx.fillRect(cx - 16, cy - 12, 18, 5);
+      octx.fillRect(cx - 7, cy - 19, 12, 4);
+      octx.fillRect(cx + 4, cy - 4, 12, 4);
+    }
+
+    // Gentle drifting leaves from the trees
+    for (let i = 0; i < 6; i++) {
+      const lx = Math.round((140 + i * 58 + t * (16 + i * 2) + Math.sin(t * 3 + i) * 8) % 340) + 120;
+      const ly = Math.round(132 + ((t * 18 + i * 19) % 76));
+      octx.fillStyle = (i % 2 === 0) ? '#7cd175' : '#f7c85a';
+      octx.fillRect(lx, ly, 3, 2);
+    }
+
+    // 7. Animated Birds (3 flying across the sky + 1 songbird hopping on the bench)
+    const skyBirds = [
+      { bx: 440, by: 46, vx: -38, vy: -2, c: '#fff5d6', wingC: '#74e6d6', phase: 0 },
+      { bx: 468, by: 62, vx: -42, vy: -1, c: '#ffe08a', wingC: '#f7a35a', phase: 1.4 },
+      { bx: 150, by: 36, vx: 32,  vy: 1,  c: '#74e6d6', wingC: '#fff5d6', phase: 2.6 }
+    ];
+    for (let i = 0; i < skyBirds.length; i++) {
+      const b = skyBirds[i];
+      const bx = Math.round((b.bx + t * b.vx + W * 2) % W);
+      const by = Math.round(b.by + Math.sin(t * 4 + b.phase) * 4);
+      const flapUp = Math.floor(t * 9 + i) % 2 === 0;
+      octx.fillStyle = b.c;
+      octx.fillRect(bx - 2, by, 5, 3);
+      octx.fillStyle = '#ff9f43';
+      octx.fillRect(b.vx < 0 ? bx - 4 : bx + 3, by + 1, 2, 1);
+      octx.fillStyle = b.wingC;
+      if (flapUp) {
+        octx.fillRect(bx - 1, by - 3, 2, 3);
+        octx.fillRect(bx + 1, by - 4, 2, 3);
+      } else {
+        octx.fillRect(bx - 1, by + 3, 2, 3);
+        octx.fillRect(bx + 1, by + 4, 2, 2);
+      }
+    }
+
+    // Perched blue songbird hopping on the park bench
+    const hopY = (Math.floor(t * 4) % 3 === 0) ? -2 : 0;
+    const birdX = 232, birdY = 162 + hopY;
+    octx.fillStyle = '#4ecdc4';
+    octx.fillRect(birdX, birdY, 6, 4);
+    octx.fillRect(birdX + 4, birdY - 2, 4, 4);
+    octx.fillStyle = '#ffe66d';
+    octx.fillRect(birdX + 8, birdY - 1, 2, 1);
+    octx.fillStyle = '#1a1a2e';
+    octx.fillRect(birdX + 6, birdY - 1, 1, 1);
+    // Chirping musical note ♪
+    if (Math.floor(t * 3) % 2 === 0) {
+      octx.fillStyle = '#ffe66d';
+      octx.font = 'bold 9px monospace';
+      octx.fillText('♪', birdX + 12, birdY - 4 - Math.round((t * 8) % 5));
+    }
+
+    // 8. Cute Animated Pixel Cats (3 cats in the urban scene)
+    function drawPixelCat(cx, cy, coat, stripe, eye, walking, dir, phase) {
+      const wag = Math.round(Math.sin(t * 6 + phase) * 2);
+      const step = walking ? (Math.floor(t * 8 + phase) % 2) : 0;
+      octx.save();
+      octx.translate(Math.round(cx), Math.round(cy));
+      if (dir < 0) octx.scale(-1, 1);
+      // Shadow
+      octx.fillStyle = 'rgba(16, 12, 28, 0.35)';
+      octx.fillRect(-7, 7, 15, 3);
+      // Tail
+      octx.fillStyle = coat;
+      octx.fillRect(-9, -2 + wag, 3, 3);
+      octx.fillRect(-11, -5 + wag, 3, 4);
+      // Body
+      octx.fillStyle = coat;
+      octx.fillRect(-6, 0, 11, 6);
+      octx.fillStyle = stripe;
+      octx.fillRect(-3, 0, 2, 3);
+      octx.fillRect(1, 0, 2, 3);
+      // Legs / paws
+      octx.fillStyle = coat;
+      octx.fillRect(-5 + step, 6, 3, 3);
+      octx.fillRect(2 - step, 6, 3, 3);
+      octx.fillStyle = '#fff5eb';
+      octx.fillRect(-5 + step, 8, 3, 1);
+      octx.fillRect(2 - step, 8, 3, 1);
+      // Head & pointed ears
+      octx.fillStyle = coat;
+      octx.fillRect(2, -5, 7, 6);
+      octx.fillRect(2, -7, 2, 2);
+      octx.fillRect(7, -7, 2, 2);
+      octx.fillStyle = '#ff9ebb';
+      octx.fillRect(3, -6, 1, 1);
+      octx.fillRect(7, -6, 1, 1);
+      // Eyes & pink nose
+      if (Math.floor(t * 2.5 + phase) % 7 !== 0) {
+        octx.fillStyle = eye;
+        octx.fillRect(4, -3, 1, 2);
+        octx.fillRect(7, -3, 1, 2);
+      }
+      octx.fillStyle = '#ff8da1';
+      octx.fillRect(6, -1, 1, 1);
+      octx.restore();
+    }
+
+    // Cat 1: Orange Tabby sitting on the sidewalk at (172, 200)
+    drawPixelCat(172, 200, '#f08c3a', '#b85618', '#223322', false, 1, 0.3);
+    if (t > 1.1 && t < 3.6) {
+      octx.fillStyle = 'rgba(20, 16, 34, 0.88)';
+      octx.fillRect(150, 178, 44, 12);
+      octx.fillStyle = '#f7c85a';
+      octx.fillRect(150, 178, 44, 1);
+      octx.fillRect(150, 189, 44, 1);
+      octx.fillStyle = '#fff3d1';
+      octx.font = 'bold 7px monospace';
+      octx.textAlign = 'center';
+      octx.fillText('meow~ ♥', 172, 184);
+    }
+
+    // Cat 2: White & Calico cat lounging beside the bench at (276, 198)
+    drawPixelCat(276, 198, '#f5efe6', '#d97236', '#264653', false, -1, 1.9);
+
+    // Cat 3: Tuxedo black-and-white cat walking cheerfully along the sidewalk
+    const cat3X = 128 + Math.min(210, t * 44);
+    drawPixelCat(cat3X, 222, '#232333', '#ffffff', '#ffe66d', true, 1, 3.4);
+
+    // 9. Student Character (Male or Female!) Walking Out of the CCS Building (Robi stayed inside)
+    const walkPhase = Math.min(1, t / 2.2);
+    const charX = Math.round(62 + walkPhase * 168); // walks from exit doorway (62) to center sidewalk (230)
+    const charY = 208;
+    const isWalking = t < 2.2;
+    const charDir = isWalking ? 'right' : 'down';
+    const charFrame = isWalking ? (Math.floor(t * 8) % 2) : 0;
+
+    // Draw the student character at 2x scale using their selected gender & perks
+    octx.fillStyle = 'rgba(16, 12, 28, 0.36)';
+    octx.fillRect(charX - 14, charY + 2, 28, 5);
+    octx.save();
+    octx.translate(charX, charY);
+    octx.scale(2, 2);
+    drawCharacterSprite(
+      octx,
+      -9,
+      -24,
+      charDir,
+      charFrame,
+      state.playerGender || 'male',
+      !!(state.perks && state.perks.headset)
+    );
+    octx.restore();
+
+    // Celebration speech bubble when the student pauses under the trees
+    if (t >= 2.1) {
+      const msg = 'Fresh air! I cleared CCS, ' + pName + '!';
+      octx.font = 'bold 8px monospace';
+      const bw = Math.max(140, octx.measureText(msg).width + 18);
+      const bx2 = Math.round(charX - bw / 2);
+      const by2 = charY - 66;
+      octx.fillStyle = 'rgba(18, 14, 30, 0.92)';
+      octx.fillRect(bx2, by2, bw, 16);
+      octx.fillStyle = '#74e6d6';
+      octx.fillRect(bx2, by2, bw, 1);
+      octx.fillRect(bx2, by2 + 15, bw, 1);
+      octx.fillRect(bx2, by2, 1, 16);
+      octx.fillRect(bx2 + bw - 1, by2, 1, 16);
+      octx.fillStyle = '#ffffff';
+      octx.textAlign = 'center';
+      octx.textBaseline = 'middle';
+      octx.fillText(msg, charX, by2 + 8);
+    }
+
+    if (el.outroCaption) {
+      el.outroCaption.textContent = t < 2.1
+        ? pName + ' steps out of the CCS Building into the afternoon breeze...'
+        : 'Cleared! Enjoying the urban park, birds, and friendly sidewalk cats.';
+    }
   }
 
   /** Stage 1 + Stage 2 cleared → the QA & Escalation Wing door opens (idempotent). */
@@ -3120,6 +3926,7 @@
     clearMovement();
     renderStats();
     renderCompletionPanel();
+    if (el.outro) el.outro.hidden = true;
     el.complete.hidden = false;
     el.pause.hidden = true;
     el.menu.hidden = true;
@@ -3128,12 +3935,28 @@
   /** Victory panel: unlock ribbon, the clear bonus, and the way onward. */
   function renderCompletionPanel() {
     const unlocked = !!state.room2Unlocked;
+    const pName = (state.playerName || 'Player').trim();
+    const isFem = state.playerGender === 'female';
+    if (el.completeStudentName) el.completeStudentName.textContent = pName;
+    if (el.completeStudentGender) {
+      el.completeStudentGender.textContent = isFem ? '♀ Female' : '♂ Male';
+    }
+    if (el.completeStudentCode) {
+      let hash = 2166136261;
+      const seed = pName.toUpperCase() + '|' + Object.keys(state.solved).length + '|' + PROG.level;
+      for (let i = 0; i < seed.length; i++) {
+        hash ^= seed.charCodeAt(i);
+        hash = Math.imul(hash, 16777619);
+      }
+      const code = (hash >>> 0).toString(36).toUpperCase().slice(0, 5).padStart(5, '0');
+      el.completeStudentCode.textContent = 'VERIFIED · CCS-' + code;
+    }
     if (el.winRibbon) {
       el.winRibbon.hidden = !unlocked;
       if (unlocked) {
-        el.winRibbon.innerHTML = '<span class="ribbon__k">ROOM 2 UNLOCKED</span>' +
-          '<span class="ribbon__v">QA &amp; Escalation Wing</span>' +
-          '<span class="ribbon__h">the door on the right wall is open</span>';
+        el.winRibbon.innerHTML = '<span class="ribbon__k">BUILDING CLEARED</span>' +
+          '<span class="ribbon__v">' + escapeHtml(pName) + ' · CCS Certified</span>' +
+          '<span class="ribbon__h">Training Floor, Mock Call Bay &amp; QA Wing complete</span>';
       }
     }
     if (el.winReward) {
@@ -3182,7 +4005,10 @@
     const secs = Math.floor(state.elapsed % 60);
     const totalQ = Object.keys(Questions.all()).length;
     const bayDone = BAY_QUESTIONS.filter(function (id) { return !!state.solved[id]; }).length;
+    const pName = escapeHtml((state.playerName || 'Player').trim());
+    const pGender = state.playerGender === 'female' ? 'Female' : 'Male';
     const rows = [
+      ['Student', pName + ' (' + pGender + ')'],
       ['Time', mins + 'm ' + String(secs).padStart(2, '0') + 's'],
       ['Clues', state.clues.length + ' / ' + CLUES_REQUIRED],
       ['Questions', Object.keys(state.solved).length + ' / ' + totalQ],
@@ -3201,9 +4027,10 @@
       return '<div class="stat"><div class="stat__k">' + r[0] + '</div>' +
              '<div class="stat__v">' + r[1] + '</div></div>';
     }).join('');
+    const rawName = (state.playerName || 'Player').trim();
     el.completeSub.textContent = accuracy >= 80
-      ? 'You escaped the CCS training floor. Solid review — bring that to the term exam.'
-      : 'You escaped the CCS training floor. Read the handbook once more before the exam.';
+      ? 'Great job, ' + rawName + '! You escaped the CCS building — bring that focus to the term exam.'
+      : 'Well done, ' + rawName + '! You escaped the CCS building — review the handbook once more before the exam.';
   }
 
   /* ══════════════════════════════════════════════════════════════════════════
@@ -3214,6 +4041,8 @@
     const n = requiredCardCount();
     el.clueCount.textContent = n + ' / ' + CLUES_REQUIRED;
     el.clueBar.style.width = Math.round((n / CLUES_REQUIRED) * 100) + '%';
+    if (el.hudTraineeName) el.hudTraineeName.textContent = state.playerName || 'Player';
+    if (el.hudTraineeGender) el.hudTraineeGender.textContent = state.playerGender === 'female' ? '♀' : '♂';
     /* v2.0 progression HUD */
     renderProgHud();
     renderObjectives();
@@ -3514,6 +4343,9 @@
     el.pause.hidden = true;
     el.complete.hidden = true;
     el.journal.hidden = true;
+    if (el.outro) el.outro.hidden = true;
+    if (el.profileModal) el.profileModal.hidden = true;
+    if (el.perksModal) el.perksModal.hidden = true;
     refreshMenu();
     updateHud();
     updateMission();
@@ -3533,6 +4365,13 @@
     el.menu.hidden = true;
     el.complete.hidden = true;
     el.pause.hidden = true;
+    if (el.outro) el.outro.hidden = true;
+    if (el.profileModal) el.profileModal.hidden = true;
+    if (el.perksModal) el.perksModal.hidden = true;
+    if (typeof isMobileDevice === 'function' && isMobileDevice()) {
+      toggleRoomPanel(true);
+      toggleMissionPanel(true);
+    }
     Sound.init();
     Sound.resume();
     updateCamera(0, true);
@@ -3571,15 +4410,224 @@
       showCompleteScreen();
       return;
     }
-    toast('Offline save resumed.', 'good');
+    toast('Welcome back, ' + (state.playerName || 'Player') + '!', 'good');
   }
 
   /** Main menu → wipe and start from the beginning. */
-  function beginNewGame() {
+  function beginNewGame(customName, customGender) {
+    if (typeof customName === 'string' && customName.trim()) {
+      state.playerName = customName.trim().slice(0, 48);
+    }
+    if (customGender === 'male' || customGender === 'female') {
+      state.playerGender = customGender;
+    }
+    saveSettings();
     clearLocal();
     resetGame();
     startGame();
-    toast('New run — the training floor is locked again.', 'info');
+    toast('Welcome, ' + (state.playerName || 'Player') + '! Your shift on the CCS Training Floor begins.', 'good');
+  }
+
+  /* ---------- Student Check-In & Character Gender Modal ------------------- */
+  let pendingGender = 'male';
+
+  function selectProfileGender(gender) {
+    pendingGender = gender === 'female' ? 'female' : 'male';
+    if (el.charMale) {
+      const mOn = pendingGender === 'male';
+      el.charMale.classList.toggle('is-selected', mOn);
+      el.charMale.setAttribute('aria-checked', mOn ? 'true' : 'false');
+    }
+    if (el.charFemale) {
+      const fOn = pendingGender === 'female';
+      el.charFemale.classList.toggle('is-selected', fOn);
+      el.charFemale.setAttribute('aria-checked', fOn ? 'true' : 'false');
+    }
+  }
+
+  function renderProfilePreviews() {
+    [
+      { canvas: el.previewMale, gender: 'male' },
+      { canvas: el.previewFemale, gender: 'female' }
+    ].forEach(function (item) {
+      if (!item.canvas || !item.canvas.getContext) return;
+      const ctx = item.canvas.getContext('2d');
+      if (!ctx) return;
+      ctx.clearRect(0, 0, item.canvas.width, item.canvas.height);
+      ctx.save();
+      ctx.imageSmoothingEnabled = false;
+      ctx.scale(2.8, 2.8);
+      // ground shadow
+      ctx.fillStyle = 'rgba(8,5,14,0.38)';
+      ctx.fillRect(6, 26, 16, 3);
+      drawCharacterSprite(ctx, 5, 2, 'down', 0, item.gender, false);
+      ctx.restore();
+    });
+  }
+
+  function openProfileModal() {
+    if (!el.profileModal) {
+      beginNewGame();
+      return;
+    }
+    el.menu.hidden = true;
+    el.complete.hidden = true;
+    el.pause.hidden = true;
+    if (el.outro) el.outro.hidden = true;
+    el.profileModal.hidden = false;
+    if (el.profileErr) el.profileErr.hidden = true;
+    if (el.profileName) {
+      el.profileName.value = (state.playerName && state.playerName !== 'Player') ? state.playerName : '';
+    }
+    selectProfileGender(state.playerGender || 'male');
+    renderProfilePreviews();
+    setTimeout(function () {
+      if (el.profileName && el.profileName.focus) el.profileName.focus();
+    }, 40);
+  }
+
+  function closeProfileModal() {
+    if (el.profileModal) el.profileModal.hidden = true;
+    if (state.started) {
+      el.pause.hidden = false;
+    } else {
+      el.menu.hidden = false;
+    }
+  }
+
+  function submitProfileForm(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    const raw = el.profileName ? String(el.profileName.value || '').trim() : '';
+    if (!raw) {
+      if (el.profileErr) el.profileErr.hidden = false;
+      Sound.bad();
+      if (el.profileName && el.profileName.focus) el.profileName.focus();
+      return false;
+    }
+    if (el.profileErr) el.profileErr.hidden = true;
+    Sound.good();
+    beginNewGame(raw, pendingGender);
+    return true;
+  }
+
+  /* ---------- Coin Perks Shop --------------------------------------------- */
+  const PERK_CATALOG = [
+    {
+      id: 'speed',
+      icon: '☕',
+      title: 'Iced Caramel Brew',
+      cost: 15,
+      repeatable: false,
+      desc: 'Permanently boosts your walking speed by +25% across all rooms.'
+    },
+    {
+      id: 'xp_boost',
+      icon: '⚡',
+      title: 'XP Energy Pack (+30 XP)',
+      cost: 15,
+      repeatable: true,
+      desc: 'Instantly grants +30 EXP — enough for 3 Letter Hints on tough questions!'
+    },
+    {
+      id: 'radar',
+      icon: '🧭',
+      title: 'Robi Radar Compass',
+      cost: 20,
+      repeatable: false,
+      desc: 'Projects a glowing golden guide arrow on the floor pointing to your next objective.'
+    },
+    {
+      id: 'headset',
+      icon: '🎧',
+      title: 'Pro Gold Headset',
+      cost: 25,
+      repeatable: false,
+      desc: 'Equips a gleaming Gold Headset on your character and grants +5 Bonus XP per correct answer.'
+    }
+  ];
+
+  let perksReturnToPause = false;
+
+  function renderPerksModal() {
+    if (el.perksWalletCoins) el.perksWalletCoins.textContent = '◎ ' + PROG.coins + ' Coins';
+    if (el.perksWalletXp) el.perksWalletXp.textContent = Progression.totalXp() + ' Total XP';
+    if (!el.perksList) return;
+    const pk = state.perks || {};
+    el.perksList.innerHTML = PERK_CATALOG.map(function (item) {
+      const owned = !item.repeatable && !!pk[item.id];
+      const canAfford = PROG.coins >= item.cost;
+      const btnText = owned
+        ? '✓ Active'
+        : (item.repeatable && pk.xpPacks ? 'Buy Again (' + item.cost + ' ◎)' : 'Unlock (' + item.cost + ' ◎)');
+      return '<div class="perk-card' + (owned ? ' is-owned' : '') + '">' +
+        '<div>' +
+          '<div class="perk-card__top">' +
+            '<span class="perk-card__icon" aria-hidden="true">' + item.icon + '</span>' +
+            '<div>' +
+              '<div class="perk-card__title">' + escapeHtml(item.title) + '</div>' +
+              '<div class="perk-card__cost">' + (owned ? 'Owned ✓' : 'Cost: ◎ ' + item.cost + ' Coins') + '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="perk-card__desc" style="margin-top:6px">' + escapeHtml(item.desc) + '</div>' +
+        '</div>' +
+        '<button type="button" class="perk-card__btn" data-perk="' + item.id + '"' +
+          ((owned || !canAfford) ? ' disabled' : '') + '>' + btnText + '</button>' +
+      '</div>';
+    }).join('');
+  }
+
+  function openPerksModal(fromPause) {
+    if (!el.perksModal) return;
+    perksReturnToPause = !!fromPause || !el.pause.hidden;
+    el.pause.hidden = true;
+    state.paused = true;
+    clearMovement();
+    renderPerksModal();
+    el.perksModal.hidden = false;
+    Sound.interact();
+  }
+
+  function closePerksModal() {
+    if (!el.perksModal) return;
+    el.perksModal.hidden = true;
+    if (perksReturnToPause) {
+      perksReturnToPause = false;
+      openPause();
+    } else if (state.started && !roundOver()) {
+      state.paused = false;
+    }
+  }
+
+  function buyPerk(perkId) {
+    const item = PERK_CATALOG.find(function (p) { return p.id === perkId; });
+    if (!item) return false;
+    if (!state.perks) state.perks = { speed: false, radar: false, headset: false, xpPacks: 0 };
+    if (!item.repeatable && state.perks[item.id]) {
+      toast(item.title + ' is already active!', 'info');
+      return false;
+    }
+    if (PROG.coins < item.cost) {
+      Sound.bad();
+      toast('Need ◎ ' + item.cost + ' coins (you have ◎ ' + PROG.coins + ').', 'bad');
+      return false;
+    }
+    PROG.coins -= item.cost;
+    if (item.id === 'xp_boost') {
+      state.perks.xpPacks = (state.perks.xpPacks || 0) + 1;
+      Progression.addXp(30);
+      toast('⚡ +30 EXP added! You can spend it on Letter Hints.', 'good');
+    } else {
+      state.perks[item.id] = true;
+      if (item.id === 'speed') toast('☕ Iced Caramel Brew active! Walking speed +25%.', 'good');
+      else if (item.id === 'radar') toast('🧭 Robi Radar Compass active! Follow the golden floor arrow.', 'good');
+      else if (item.id === 'headset') toast('🎧 Pro Gold Headset equipped! +5 Bonus XP per correct answer.', 'good');
+    }
+    Sound.pickup();
+    popChip(el.coinCount);
+    updateHud();
+    renderPerksModal();
+    saveLocal();
+    return true;
   }
 
   /* ---------- reset / restart --------------------------------------------- */
@@ -3588,6 +4636,7 @@
     if (player.seated) standUp(true);
     if (el.btnStand) el.btnStand.hidden = true;
     if (state.roomId !== 'lab') enterRoom('lab', null, true);
+    state.perks = { speed: false, radar: false, headset: false, xpPacks: 0 };
     state.clues = [];
     state.solved = {};
     state.attempts = {};
@@ -3607,6 +4656,10 @@
     el.journal.hidden = true;
     el.complete.hidden = true;
     el.menu.hidden = true;
+    outroActive = false;
+    if (el.outro) el.outro.hidden = true;
+    if (el.profileModal) el.profileModal.hidden = true;
+    if (el.perksModal) el.perksModal.hidden = true;
     doorAnim = 0;
     buildSolids();
     player.x = room.spawn.x * TILE;
@@ -3938,8 +4991,36 @@
     winRibbon: $('win-ribbon'),
     winReward: $('win-reward'),
     completeTitle: $('complete-title'),
+    completeStudent: $('complete-student'),
+    completeStudentGender: $('complete-student-gender'),
+    completeStudentName: $('complete-student-name'),
+    completeStudentCode: $('complete-student-code'),
+    outro: $('outro'),
+    outroCanvas: $('outro-canvas'),
+    outroCaption: $('outro-caption'),
+    btnSkipOutro: $('btn-skip-outro'),
     btnEnterWing: $('btn-enter-wing'),
     btnKeepExploring: $('btn-keep-exploring'),
+    hudTrainee: $('hud-trainee'),
+    hudTraineeGender: $('hud-trainee-gender'),
+    hudTraineeName: $('hud-trainee-name'),
+    btnPerks: $('btn-perks'),
+    btnPausePerks: $('btn-pause-perks'),
+    profileModal: $('profile-modal'),
+    profileForm: $('profile-form'),
+    profileName: $('profile-name'),
+    profileErr: $('profile-err'),
+    charMale: $('char-male'),
+    charFemale: $('char-female'),
+    previewMale: $('preview-male'),
+    previewFemale: $('preview-female'),
+    btnProfileStart: $('btn-profile-start'),
+    btnProfileCancel: $('btn-profile-cancel'),
+    perksModal: $('perks-modal'),
+    perksWalletCoins: $('perks-wallet-coins'),
+    perksWalletXp: $('perks-wallet-xp'),
+    perksList: $('perks-list'),
+    btnPerksClose: $('btn-perks-close'),
     prompt: $('prompt'),
     promptKey: $('prompt-key'),
     promptText: $('prompt-text'),
@@ -4151,7 +5232,8 @@
       });
     }
     if (el.roomPanel) {
-      el.roomPanel.addEventListener('click', function () {
+      el.roomPanel.addEventListener('click', function (e) {
+        if (e && e.target && e.target.closest && e.target.closest('#coin-count')) return;
         Sound.interact();
         toggleRoomPanel();
       });
@@ -4161,6 +5243,55 @@
           Sound.interact();
           toggleRoomPanel();
         }
+      });
+    }
+    if (el.coinCount) {
+      el.coinCount.addEventListener('click', function (e) {
+        if (e && e.stopPropagation) e.stopPropagation();
+        if (state.started && !roundOver()) openPerksModal(false);
+      });
+    }
+    if (el.btnPerks) {
+      el.btnPerks.addEventListener('click', function () {
+        if (!state.started || roundOver()) return;
+        if (el.perksModal && !el.perksModal.hidden) closePerksModal();
+        else openPerksModal(false);
+      });
+    }
+    if (el.btnPausePerks) {
+      el.btnPausePerks.addEventListener('click', function () {
+        openPerksModal(true);
+      });
+    }
+    if (el.btnPerksClose) {
+      el.btnPerksClose.addEventListener('click', closePerksModal);
+    }
+    if (el.perksList) {
+      el.perksList.addEventListener('click', function (e) {
+        const btn = e.target && e.target.closest ? e.target.closest('[data-perk]') : null;
+        if (!btn) return;
+        buyPerk(btn.getAttribute('data-perk'));
+      });
+    }
+    if (el.charMale) {
+      el.charMale.addEventListener('click', function () {
+        Sound.interact();
+        selectProfileGender('male');
+      });
+    }
+    if (el.charFemale) {
+      el.charFemale.addEventListener('click', function () {
+        Sound.interact();
+        selectProfileGender('female');
+      });
+    }
+    if (el.profileForm) {
+      el.profileForm.addEventListener('submit', submitProfileForm);
+    }
+    if (el.btnProfileCancel) {
+      el.btnProfileCancel.addEventListener('click', function () {
+        Sound.interact();
+        closeProfileModal();
       });
     }
     if (el.missionPanel) {
@@ -4181,6 +5312,7 @@
     el.btnPause.addEventListener('click', function () {
       if (Dialogue.open) Dialogue.close();
       if (Book.open) { Book.close(); return; }
+      if (el.perksModal && !el.perksModal.hidden) { closePerksModal(); return; }
       if (el.menu.hidden === false) return;
       togglePause();
     });
@@ -4219,7 +5351,7 @@
 
     /* main menu */
     el.btnResume.addEventListener('click', resumeSave);
-    el.btnNewGame.addEventListener('click', beginNewGame);
+    el.btnNewGame.addEventListener('click', openProfileModal);
     el.btnMenuBook.addEventListener('click', function () { Book.show('t1'); });
     el.btnMenuSettings.addEventListener('click', function () { openSettings(true); });
     el.btnMenuHelp.addEventListener('click', function () {
@@ -4248,10 +5380,14 @@
     el.btnBookDone.addEventListener('click', function () { Book.close(); });
 
     /* completion */
+    if (el.btnSkipOutro) {
+      el.btnSkipOutro.addEventListener('click', function () {
+        Sound.interact();
+        finishExitCutscene();
+      });
+    }
     el.btnPlayAgain.addEventListener('click', function () {
-      clearLocal();
-      resetGame();
-      startGame();
+      openProfileModal();
     });
     if (el.btnCompleteMenu) el.btnCompleteMenu.addEventListener('click', function () {
       clearLocal();
@@ -5307,9 +6443,15 @@
     } else if (dir === 'left' || dir === 'right') {
       const flip = dir === 'left';
       const fx = function (dx, w) { return flip ? (18 - dx - w) : dx; };
-      P(fx(4, 10), 0, 10, 4, hair);
-      P(fx(3, 5), 2, 5, 7, hair);
       P(fx(6, 7), 4, 7, 5, skin);
+      P(fx(13, 1), 6, 1, 2, skin);
+      P(fx(4, 10), 0, 10, 2, hair);
+      P(fx(3, 12), 1, 12, 3, hair);
+      P(fx(3, 5), 2, 5, 6, hair);
+      P(fx(4, 4), 8, 4, 2, hair);
+      P(fx(11, 4), 3, 4, 2, hair);
+      P(fx(8, 2), 4, 2, 3, hair);
+      P(fx(7, 1), 5, 1, 2, skin);
       P(fx(11, 2), 6, 2, 1, '#2b2020');
       P(fx(5, 8), 9, 8, 9, shirt);
       const sw = stepFrame === 1 ? 1 : stepFrame === 2 ? -1 : 0;
@@ -5350,8 +6492,9 @@
 
   /** Seated figure (a colleague, or the player) facing the monitor. */
   function drawSeatedFigure(g, cx, baseY, look, isPlayer) {
-    const shirt = look.shirt || '#e8e4da';
-    const hair = look.hair || '#261b18';
+    const isFem = isPlayer && state.playerGender === 'female';
+    const shirt = isPlayer ? (isFem ? '#f3eae6' : '#e8e4da') : (look.shirt || '#e8e4da');
+    const hair = isPlayer ? (isFem ? '#3d2118' : '#261b18') : (look.hair || '#261b18');
     const bob = isPlayer ? (Math.floor(player.seatT * 4) % 2 ? -1 : 0) : 0;
 
     // soft shadow on the seat
@@ -5379,10 +6522,22 @@
     fill(g, cx - 5, baseY - 21 + bob, 11, 2, '#c48f62');
 
     if (isPlayer) {
-      // backpack strap so the player reads as "you"
-      fill(g, cx - 7, baseY - 19 + bob, 3, 13, '#b14a33');
-      fill(g, cx + 4, baseY - 19 + bob, 3, 13, '#b14a33');
-      fill(g, cx - 5, baseY - 30 + bob, 11, 1, 'rgba(255,255,255,0.12)');
+      const strapCol = isFem ? '#9e425b' : '#b14a33';
+      fill(g, cx - 7, baseY - 19 + bob, 3, 13, strapCol);
+      fill(g, cx + 4, baseY - 19 + bob, 3, 13, strapCol);
+      if (isFem) {
+        // cascading long hair + teal hair tie at the back
+        fill(g, cx - 5, baseY - 19 + bob, 11, 6, hair);
+        fill(g, cx - 3, baseY - 13 + bob, 7, 4, '#593326');
+        fill(g, cx - 2, baseY - 21 + bob, 5, 2, '#59d2c4');
+      }
+      if (state.perks && state.perks.headset) {
+        fill(g, cx - 7, baseY - 27 + bob, 2, 5, '#f7c85a');
+        fill(g, cx + 6, baseY - 27 + bob, 2, 5, '#f7c85a');
+        fill(g, cx - 6, baseY - 31 + bob, 13, 2, '#ffd966');
+      } else {
+        fill(g, cx - 5, baseY - 30 + bob, 11, 1, 'rgba(255,255,255,0.12)');
+      }
     }
   }
 
@@ -5404,45 +6559,117 @@
     return lines;
   }
 
+  const ROAM_JARGON_RANGE = TILE * 2.35;  // ~75px (~2.3 tiles): player must be near a roaming student
+  const ROAM_JARGON_DURATION = 4.2;       // seconds the jargon bubble stays visible when near
+
+  function isMobileDevice() {
+    if (IS_TOUCH || state.device === 'phone') return true;
+    const w = view.cssW || window.innerWidth || 800;
+    if (w <= 680) return true;
+    try {
+      return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent || '');
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function isVerticalMobile() {
+    const w = view.cssW || window.innerWidth || 800;
+    const h = view.cssH || window.innerHeight || 600;
+    return isMobileDevice() && (h > w || w <= 540);
+  }
+
   /** Draws the agent's speech/thought bubble in crisp CSS screen space on `vis`. */
-  function drawThoughtBubble(g, anchorX, anchorY, line, name, minY, placedRects) {
+  function drawThoughtBubble(g, anchorX, anchorY, line, name, minY, placedRects, opts) {
     if (!line) return;
     g.save();
-    const bodyFont = '600 13px "Segoe UI", "Trebuchet MS", system-ui, -apple-system, sans-serif';
-    const tagFont = 'bold 11px "Segoe UI", "Trebuchet MS", system-ui, -apple-system, sans-serif';
+    const isMobile = (opts && typeof opts.mobile === 'boolean') ? opts.mobile : isMobileDevice();
+    const isVert = (opts && typeof opts.vertical === 'boolean') ? opts.vertical : isVerticalMobile();
+    const timer = (opts && typeof opts.timer === 'number' && opts.timer > 0) ? opts.timer : 0;
+    const maxTimer = (opts && opts.maxTimer) ? opts.maxTimer : ROAM_JARGON_DURATION;
+
+    const bodyFont = isMobile
+      ? '600 10px "Segoe UI", "Trebuchet MS", system-ui, -apple-system, sans-serif'
+      : '600 13px "Segoe UI", "Trebuchet MS", system-ui, -apple-system, sans-serif';
+    const tagFont = isMobile
+      ? 'bold 9px "Segoe UI", "Trebuchet MS", system-ui, -apple-system, sans-serif'
+      : 'bold 11px "Segoe UI", "Trebuchet MS", system-ui, -apple-system, sans-serif';
     g.font = bodyFont;
     g.textBaseline = 'alphabetic';
 
     const cssW = view.cssW || 800;
     const cssH = view.cssH || 600;
-    const maxW = Math.min(268, Math.max(176, cssW - 36));
+    const maxW = isMobile
+      ? Math.min(276, Math.max(160, cssW - 20))
+      : Math.min(268, Math.max(176, cssW - 36));
     const lines = wrapText(g, line.text, maxW);
     let textW = 0;
     lines.forEach(function (l) { textW = Math.max(textW, g.measureText(l).width); });
 
     const label = line.tag === 'jargon' ? 'JARGON' : line.tag === 'idiom' ? 'IDIOM' : line.tag === 'tip' ? 'TIP'
                 : line.tag === 'note' ? 'MY DESK' : 'FACT';
-    const tag = (name ? name.toUpperCase() + ' · ' : '') + label;
+    const secsLeft = Math.max(1, Math.ceil(timer));
+    const timerBadge = timer > 0 ? (' · ⏱ ' + secsLeft + 's') : '';
+    const tag = (name ? name.toUpperCase() + ' · ' : '') + label + timerBadge;
     g.font = tagFont;
     const tagW = g.measureText(tag).width + 6;
 
-    const padX = 12;
-    const padY = 10;
-    const tagH = 22;
-    const lineH = 18;
+    const padX = isMobile ? 8 : 12;
+    const padY = isMobile ? 4 : 10;
+    const tagH = isMobile ? 14 : 22;
+    const lineH = isMobile ? 12.5 : 18;
     const boxW = Math.min(maxW + padX * 2, Math.ceil(Math.max(textW, tagW)) + padX * 2);
-    const boxH = tagH + lines.length * lineH + padY + 4;
+    const boxH = Math.ceil(tagH + lines.length * lineH + padY + (timer > 0 ? 5 : 4));
 
     const pt = worldToCss(anchorX, anchorY);
     const sx = pt.x;
     const sy = pt.y;
-    const gapAbove = (player.seated && line.tag !== 'jargon') ? 26 : 12;
+    const gapAbove = (player.seated && line.tag !== 'jargon') ? (isMobile ? 14 : 26) : 12;
 
-    let bx = Math.round(sx - boxW / 2);
-    let by = Math.round(sy - boxH - gapAbove);
+    const borderCol = line.tag === 'jargon' ? '#f7c85a'
+                    : line.tag === 'idiom'  ? '#d6ad54'
+                    : line.tag === 'note'   ? '#74c686'
+                    : '#74e6d6';
+    const tagCol = (line.tag === 'jargon' || line.tag === 'idiom') ? '#ffd666'
+                 : line.tag === 'note' ? '#9ef0ac'
+                 : '#7cebe0';
 
-    bx = clamp(bx, 8, Math.max(8, cssW - boxW - 8));
-    by = clamp(by, minY == null ? 8 : minY, Math.max(8, cssH - boxH - 14));
+    let bx, by;
+    if (isMobile) {
+      // On mobile (especially Android vertical mode), never place a large speech box over the center
+      // of the screen where the player and roaming students walk.
+      // 1. Draw a tiny non-blocking timer badge ("💬 4s") right above the roaming student's head:
+      if (timer > 0) {
+        const pillTxt = '💬 ' + secsLeft + 's';
+        g.font = 'bold 9px "Segoe UI", system-ui, sans-serif';
+        const pw = Math.ceil(g.measureText(pillTxt).width) + 10;
+        const ph = 14;
+        const px = clamp(Math.round(sx - pw / 2), 6, Math.max(6, cssW - pw - 6));
+        const py = clamp(Math.round(sy - ph - 4), 48, Math.max(48, cssH - 150));
+        g.fillStyle = 'rgba(18, 14, 34, 0.85)';
+        g.fillRect(px, py, pw, ph);
+        g.strokeStyle = borderCol;
+        g.lineWidth = 1.25;
+        g.strokeRect(px + 0.5, py + 0.5, pw - 1, ph - 1);
+        g.fillStyle = tagCol;
+        g.fillText(pillTxt, px + 5, py + 10);
+      }
+
+      // 2. Dock the compact, semi-transparent jargon strip in the non-blocking safe zone:
+      bx = Math.round((cssW - boxW) / 2);
+      const roomCollapsed = !el.roomPanel || el.roomPanel.classList.contains('is-collapsed');
+      const missionCollapsed = !el.missionPanel || el.missionPanel.classList.contains('is-collapsed');
+      if (isVert) {
+        by = (roomCollapsed && missionCollapsed) ? 68 : Math.max(76, cssH - boxH - 134);
+      } else {
+        by = Math.max(48, cssH - boxH - 128);
+      }
+    } else {
+      bx = Math.round(sx - boxW / 2);
+      by = Math.round(sy - boxH - gapAbove);
+      bx = clamp(bx, 8, Math.max(8, cssW - boxW - 8));
+      by = clamp(by, minY == null ? 8 : minY, Math.max(8, cssH - boxH - 14));
+    }
 
     // Avoid overlapping previously drawn bubbles
     if (placedRects && placedRects.length) {
@@ -5462,57 +6689,327 @@
       placedRects.push({ x: bx, y: by, w: boxW, h: boxH });
     }
 
-    const bgFill = line.tag === 'jargon' ? '#1a1330'
-                 : line.tag === 'idiom'  ? '#211838'
-                 : line.tag === 'note'   ? '#14231b'
-                 : '#13202a';
-    const borderCol = line.tag === 'jargon' ? '#f7c85a'
-                    : line.tag === 'idiom'  ? '#d6ad54'
-                    : line.tag === 'note'   ? '#74c686'
-                    : '#74e6d6';
-    const tagCol = (line.tag === 'jargon' || line.tag === 'idiom') ? '#ffd666'
-                 : line.tag === 'note' ? '#9ef0ac'
-                 : '#7cebe0';
+    const bgFill = isMobile
+      ? 'rgba(20, 15, 38, 0.82)'
+      : (line.tag === 'jargon' ? '#1a1330'
+       : line.tag === 'idiom'  ? '#211838'
+       : line.tag === 'note'   ? '#14231b'
+       : '#13202a');
 
     // outer shadow + crisp panel
-    g.fillStyle = 'rgba(5, 3, 12, 0.72)';
+    g.fillStyle = isMobile ? 'rgba(5, 3, 12, 0.45)' : 'rgba(5, 3, 12, 0.68)';
     g.fillRect(bx + 2, by + 3, boxW, boxH);
     g.fillStyle = bgFill;
     g.fillRect(bx, by, boxW, boxH);
     g.strokeStyle = borderCol;
-    g.lineWidth = 1.75;
+    g.lineWidth = isMobile ? 1.25 : 1.75;
     g.strokeRect(bx + 0.5, by + 0.5, boxW - 1, boxH - 1);
 
     // tag row
     g.fillStyle = tagCol;
     g.font = tagFont;
-    g.fillText(tag, bx + padX, by + 15);
+    g.fillText(tag, bx + padX, by + (isMobile ? 11 : 15));
     g.fillStyle = 'rgba(255, 255, 255, 0.16)';
-    g.fillRect(bx + padX, by + 20, boxW - padX * 2, 1);
+    g.fillRect(bx + padX, by + (isMobile ? 13 : 20), boxW - padX * 2, 1);
 
     // body text (crisp white with subtle dark shadow for readability)
     g.font = bodyFont;
     for (let i = 0; i < lines.length; i++) {
-      const ty = by + tagH + 14 + i * lineH;
+      const ty = Math.round(by + tagH + (isMobile ? 10 : 14) + i * lineH);
       g.fillStyle = 'rgba(0, 0, 0, 0.75)';
       g.fillText(lines[i], bx + padX + 1, ty + 1);
       g.fillStyle = '#ffffff';
       g.fillText(lines[i], bx + padX, ty);
     }
 
-    // pointer tail
-    const tailX = clamp(Math.round(sx), bx + 14, bx + boxW - 14);
-    g.fillStyle = borderCol;
-    g.fillRect(tailX - 5, by + boxH, 10, 3);
-    g.fillRect(tailX - 3, by + boxH + 3, 6, 3);
-    g.fillRect(tailX - 1, by + boxH + 6, 2, 2);
-    g.fillStyle = bgFill;
-    g.fillRect(tailX - 4, by + boxH - 1, 8, 3);
-    g.fillRect(tailX - 2, by + boxH + 2, 4, 2);
+    // proximity timer bar along the bottom edge
+    if (timer > 0) {
+      const ratio = clamp(timer / maxTimer, 0, 1);
+      g.fillStyle = 'rgba(255, 255, 255, 0.12)';
+      g.fillRect(bx + 2, by + boxH - 3, boxW - 4, 2);
+      g.fillStyle = borderCol;
+      g.fillRect(bx + 2, by + boxH - 3, Math.max(2, Math.round((boxW - 4) * ratio)), 2);
+    }
+
+    // pointer tail (desktop only; omitted on mobile so the center playfield stays 100% clear)
+    if (!isMobile) {
+      const tailX = clamp(Math.round(sx), bx + 14, bx + boxW - 14);
+      g.fillStyle = borderCol;
+      g.fillRect(tailX - 5, by + boxH, 10, 3);
+      g.fillRect(tailX - 3, by + boxH + 3, 6, 3);
+      g.fillRect(tailX - 1, by + boxH + 6, 2, 2);
+      g.fillStyle = bgFill;
+      g.fillRect(tailX - 4, by + boxH - 1, 8, 3);
+      g.fillRect(tailX - 2, by + boxH + 2, 4, 2);
+    }
     g.restore();
   }
 
-  /* ---------- the player character ---------------------------------------- */
+  /* ---------- the player character (Male & Female + Gold Headset) --------- */
+  function drawCharacterSprite(g, left, top, dir, stepFrame, gender, hasGoldHeadset) {
+    const isFem = gender === 'female';
+    const P = function (dx, dy, w, h, color) {
+      g.fillStyle = color;
+      g.fillRect(left + dx, top + dy, w, h);
+    };
+
+    const skin = '#e6b183';
+    const skinShade = '#c48f62';
+    const shoe = '#191724';
+
+    if (isFem) {
+      const hair = '#3d2118';
+      const hairHi = '#593326';
+      const ribbon = '#59d2c4';
+      const blouse = '#f3eae6';
+      const blouseShade = '#d9cbc5';
+      const collar = '#e06d85';
+      const skirt = '#28304d';
+      const skirtShade = '#1d2338';
+      const sock = '#f0ece4';
+      const pack = '#9e425b';
+      const packShade = '#782e43';
+
+      if (dir === 'down') {
+        // top crown + side-swept bangs + long shoulder locks
+        P(4, 0, 10, 3, hair);
+        P(5, 1, 6, 1, hairHi);
+        P(3, 2, 12, 3, hair);
+        P(2, 4, 3, 9, hair);      // left long lock
+        P(13, 4, 3, 9, hair);     // right long lock
+        P(3, 3, 2, 2, ribbon);    // teal hair clip
+        // face
+        P(5, 4, 8, 5, skin);
+        P(5, 3, 6, 1, hair);      // swept bangs
+        P(6, 6, 2, 1, '#2b2020'); // left eye + lash
+        P(10, 6, 2, 1, '#2b2020');// right eye + lash
+        P(5, 7, 1, 1, '#dfa08c'); // blush
+        P(12, 7, 1, 1, '#dfa08c');
+        P(8, 8, 2, 1, skinShade);
+        // blouse + coral collar & lanyard
+        P(4, 9, 10, 7, blouse);
+        P(4, 9, 2, 7, blouseShade);
+        P(12, 9, 2, 7, blouseShade);
+        P(7, 9, 4, 2, collar);
+        P(8, 11, 2, 3, '#f7c85a'); // ID badge
+        // arms
+        P(2, 10, 2, 5, blouse);
+        P(14, 10, 2, 5, blouse);
+        P(2, 15, 2, 2, skin);
+        P(14, 15, 2, 2, skin);
+        // pleated navy skirt
+        P(4, 16, 10, 4, skirt);
+        P(6, 16, 1, 4, skirtShade);
+        P(9, 16, 1, 4, skirtShade);
+        P(11, 16, 1, 4, skirtShade);
+        // legs + socks + loafers
+        const la = stepFrame === 1 ? 1 : 0;
+        const lb = stepFrame === 2 ? 1 : 0;
+        P(5, 20, 3, 2 + la, skin);
+        P(10, 20, 3, 2 + lb, skin);
+        P(5, 22 + la, 3, 1, sock);
+        P(10, 22 + lb, 3, 1, sock);
+        P(5, 23 + la, 3, 3, shoe);
+        P(10, 23 + lb, 3, 3, shoe);
+      } else if (dir === 'up') {
+        // back of head + long flowing hair + ponytail
+        P(3, 1, 12, 13, hair);
+        P(4, 0, 10, 2, hair);
+        P(5, 2, 8, 2, hairHi);
+        P(7, 5, 4, 2, ribbon);
+        // berry backpack
+        P(4, 11, 10, 8, pack);
+        P(4, 11, 10, 2, '#ba5671');
+        P(5, 13, 8, 5, packShade);
+        // ponytail tip over pack
+        P(7, 7, 4, 6, hair);
+        // arms
+        P(2, 11, 2, 5, blouse);
+        P(14, 11, 2, 5, blouse);
+        P(2, 16, 2, 2, skin);
+        P(14, 16, 2, 2, skin);
+        // skirt + legs
+        P(4, 17, 10, 3, skirt);
+        const la = stepFrame === 1 ? 1 : 0;
+        const lb = stepFrame === 2 ? 1 : 0;
+        P(5, 20, 3, 3 + la, skin);
+        P(10, 20, 3, 3 + lb, skin);
+        P(5, 23 + la, 3, 1, sock);
+        P(10, 23 + lb, 3, 1, sock);
+        P(5, 24 + la, 3, 3, shoe);
+        P(10, 24 + lb, 3, 3, shoe);
+      } else {
+        const flip = dir === 'left';
+        const M = function (dx, dy, w, h, color) {
+          const nx = flip ? 18 - dx - w : dx;
+          g.fillStyle = color;
+          g.fillRect(left + nx, top + dy, w, h);
+        };
+        // head + flowing ponytail at back
+        M(6, 4, 7, 5, skin);
+        M(13, 6, 1, 2, skin);      // nose profile
+        M(4, 0, 10, 2, hair);      // top crown
+        M(3, 1, 12, 3, hair);      // upper hair + bangs
+        M(5, 1, 6, 1, hairHi);     // highlight
+        M(3, 2, 5, 8, hair);       // full back & side hair
+        M(8, 3, 6, 1, hair);       // swept bangs
+        M(11, 3, 3, 2, hair);      // front fringe
+        M(8, 4, 2, 5, hair);       // side lock framing cheek
+        M(2, 4, 3, 9, hair);       // flowing ponytail
+        M(3, 4, 2, 2, ribbon);     // teal hair tie
+        M(11, 6, 2, 1, '#2b2020'); // eye
+        M(10, 7, 1, 1, '#dfa08c'); // blush
+        // blouse + skirt
+        M(5, 10, 8, 6, blouse);
+        M(5, 10, 2, 6, blouseShade);
+        M(9, 10, 2, 3, collar);
+        M(4, 16, 10, 4, skirt);
+        M(6, 16, 2, 4, skirtShade);
+        // arm swings
+        const armY = stepFrame === 1 ? 1 : 0;
+        M(13, 11 - armY, 2, 5, blouse);
+        M(13, 15 - armY, 2, 2, skin);
+        M(3, 11 + armY, 2, 5, blouseShade);
+        // legs
+        const la = stepFrame === 1 ? 1 : 0;
+        const lb = stepFrame === 2 ? 1 : 0;
+        M(6, 20, 3, 3 + la, skin);
+        M(9, 20, 3, 3 + lb, skin);
+        M(6, 23 + la, 3, 1, sock);
+        M(9, 23 + lb, 3, 1, sock);
+        M(6, 24 + la, 4, 3, shoe);
+        M(9, 24 + lb, 4, 3, shoe);
+      }
+    } else {
+      // Male Character
+      const hair = '#261b18';
+      const hairHi = '#46322c';
+      const hairShade = '#17100e';
+      const shirt = '#e8e4da';
+      const shirtShade = '#c8c2b4';
+      const pants = '#2d3654';
+      const pantsShade = '#212940';
+      const pack = '#b14a33';
+      const packShade = '#8b3624';
+
+      if (dir === 'down') {
+        // full layered crown + side-swept bangs + sideburns
+        P(4, 0, 10, 3, hair);
+        P(5, 1, 6, 1, hairHi);
+        P(3, 2, 12, 3, hair);
+        P(6, 2, 5, 1, hairHi);
+        P(3, 4, 2, 5, hair);
+        P(13, 4, 2, 5, hair);
+        P(5, 4, 8, 5, skin);
+        P(5, 3, 8, 1, hair);
+        P(5, 4, 3, 1, hair);          // textured front bangs
+        P(10, 4, 2, 1, hair);
+        P(7, 6, 2, 1, '#2b2020');
+        P(10, 6, 2, 1, '#2b2020');
+        P(8, 8, 3, 1, skinShade);
+        // torso
+        P(4, 9, 10, 9, shirt);
+        P(4, 9, 2, 9, shirtShade);
+        P(12, 9, 2, 9, shirtShade);
+        P(8, 9, 3, 2, '#9db3d6');
+        P(8, 11, 3, 2, '#7d94bd');
+        // arms
+        P(2, 10, 2, 6, shirt);
+        P(14, 10, 2, 6, shirt);
+        P(2, 15, 2, 2, skin);
+        P(14, 15, 2, 2, skin);
+        // legs
+        const la = stepFrame === 1 ? 1 : 0;
+        const lb = stepFrame === 2 ? 1 : 0;
+        P(5, 18, 3, 5 + la, pants);
+        P(10, 18, 3, 5 + lb, pants);
+        P(5, 23 + la, 3, 3, shoe);
+        P(10, 23 + lb, 3, 3, shoe);
+        P(5, 18, 3, 1, pantsShade);
+        P(10, 18, 3, 1, pantsShade);
+      } else if (dir === 'up') {
+        P(3, 1, 12, 10, hair);
+        P(4, 0, 10, 2, hair);
+        P(5, 2, 8, 2, hairHi);
+        P(4, 9, 10, 2, hairShade);
+        P(4, 11, 10, 1, skinShade);
+        // backpack
+        P(4, 10, 10, 10, pack);
+        P(4, 10, 10, 3, '#c25a42');
+        P(5, 12, 8, 6, packShade);
+        P(6, 13, 6, 2, '#d97a5f');
+        // arms
+        P(2, 11, 2, 6, shirt);
+        P(14, 11, 2, 6, shirt);
+        P(2, 16, 2, 2, skin);
+        P(14, 16, 2, 2, skin);
+        // legs
+        const la = stepFrame === 1 ? 1 : 0;
+        const lb = stepFrame === 2 ? 1 : 0;
+        P(5, 19, 3, 5 + la, pants);
+        P(10, 19, 3, 5 + lb, pants);
+        P(5, 24 + la, 3, 3, shoe);
+        P(10, 24 + lb, 3, 3, shoe);
+      } else {
+        const flip = dir === 'left';
+        const M = function (dx, dy, w, h, color) {
+          const nx = flip ? 18 - dx - w : dx;
+          g.fillStyle = color;
+          g.fillRect(left + nx, top + dy, w, h);
+        };
+        // face base (front half only so the back & crown stay full of hair)
+        M(6, 4, 7, 5, skin);
+        M(13, 6, 1, 2, skin);         // nose profile
+        M(12, 8, 1, 1, skinShade);
+        // full layered hair in side profile: crown, swept front fringe, back volume, and sideburn
+        M(4, 0, 10, 2, hair);         // top crown
+        M(3, 1, 12, 3, hair);         // upper hair volume + front fringe overhang
+        M(5, 1, 6, 1, hairHi);        // crown highlight
+        M(6, 2, 6, 1, hairHi);        // mid highlight
+        M(3, 2, 5, 6, hair);          // thick back-of-head hair
+        M(3, 4, 1, 4, hairShade);     // back contour shade
+        M(4, 8, 4, 2, hairShade);     // tapered nape at back of neck
+        M(8, 3, 6, 1, hair);          // hairline across forehead
+        M(11, 3, 4, 2, hair);         // swept front bangs
+        M(8, 4, 2, 3, hair);          // sideburn in front of ear
+        M(7, 5, 1, 2, skin);          // ear tucked between back hair and sideburn
+        M(11, 6, 2, 1, '#2b2020');    // eye
+        // backpack visible on back in side view
+        M(2, 10, 3, 7, pack);
+        M(2, 10, 3, 2, '#c25a42');
+        M(2, 12, 2, 4, packShade);
+        // torso
+        M(5, 10, 8, 9, shirt);
+        M(5, 10, 2, 9, shirtShade);
+        M(11, 10, 2, 9, shirtShade);
+        M(9, 10, 2, 3, '#9db3d6');
+        // arm swings
+        const armY = stepFrame === 1 ? 1 : 0;
+        M(13, 11 - armY, 2, 5, shirt);
+        M(13, 15 - armY, 2, 2, skin);
+        M(3, 11 + armY, 2, 5, shirtShade);
+        M(3, 15 + armY, 2, 2, skinShade);
+        // legs
+        const la = stepFrame === 1 ? 1 : 0;
+        const lb = stepFrame === 2 ? 1 : 0;
+        M(6, 19, 3, 5 + la, pants);
+        M(9, 19, 3, 5 + lb, pants);
+        M(6, 24 + la, 4, 3, shoe);
+        M(9, 24 + lb, 4, 3, shoe);
+      }
+    }
+
+    // Pro Gold Headset perk overlay
+    if (hasGoldHeadset) {
+      P(3, 0, 12, 1, '#ffd966');
+      P(2, 3, 2, 4, '#f7c85a');
+      P(14, 3, 2, 4, '#f7c85a');
+      if (dir !== 'up') {
+        P(11, 7, 3, 1, '#ffd966'); // golden mic boom
+      }
+    }
+  }
+
   function drawPlayer(g) {
     const x = Math.round(player.x);
     const y = Math.round(player.y);
@@ -5521,6 +7018,11 @@
     if (player.seated) {
       drawSeatedFigure(g, x, y, { shirt: '#e8e4da', hair: '#261b18' }, true);
       return;
+    }
+
+    // Optional Radar Compass arrow on the floor when perk is active
+    if (state.perks && state.perks.radar) {
+      drawRadarArrow(g, x, y);
     }
 
     // ground shadow (pixel-stepped so it stays in style)
@@ -5535,106 +7037,74 @@
     const left = x - 9;
     const top = y - 27 + bob;
 
-    const P = function (dx, dy, w, h, color) {
-      g.fillStyle = color;
-      g.fillRect(left + dx, top + dy, w, h);
+    drawCharacterSprite(
+      g,
+      left,
+      top,
+      player.dir || 'down',
+      stepFrame,
+      state.playerGender || 'male',
+      !!(state.perks && state.perks.headset)
+    );
+  }
+
+  /** Find the next objective object in the current room for the Radar Compass perk. */
+  function findNextObjectiveObject() {
+    if (!room || !room.objects) return null;
+    const byId = function (id) {
+      return room.objects.find(function (o) { return o.id === id; }) || null;
     };
-
-    const skin = '#e6b183';
-    const skinShade = '#c48f62';
-    const hair = '#261b18';
-    const shirt = '#e8e4da';
-    const shirtShade = '#c8c2b4';
-    const pants = '#2d3654';
-    const pantsShade = '#212940';
-    const shoe = '#191724';
-    const pack = '#b14a33';
-    const packShade = '#8b3624';
-
-    if (player.dir === 'down') {
-      P(4, 0, 10, 3, hair);
-      P(3, 2, 12, 3, hair);
-      P(3, 4, 2, 5, hair);
-      P(13, 4, 2, 5, hair);
-      P(5, 4, 8, 5, skin);
-      P(5, 3, 8, 1, hair);
-      P(7, 6, 2, 1, '#2b2020');
-      P(10, 6, 2, 1, '#2b2020');
-      P(8, 8, 3, 1, skinShade);
-      // torso
-      P(4, 9, 10, 9, shirt);
-      P(4, 9, 2, 9, shirtShade);
-      P(12, 9, 2, 9, shirtShade);
-      P(8, 9, 3, 2, '#9db3d6');
-      P(8, 11, 3, 2, '#7d94bd');
-      // arms
-      P(2, 10, 2, 6, shirt);
-      P(14, 10, 2, 6, shirt);
-      P(2, 15, 2, 2, skin);
-      P(14, 15, 2, 2, skin);
-      // legs
-      const la = stepFrame === 1 ? 1 : 0;
-      const lb = stepFrame === 2 ? 1 : 0;
-      P(5, 18, 3, 5 + la, pants);
-      P(10, 18, 3, 5 + lb, pants);
-      P(5, 23 + la, 3, 3, shoe);
-      P(10, 23 + lb, 3, 3, shoe);
-      P(5, 18, 3, 1, pantsShade);
-      P(10, 18, 3, 1, pantsShade);
-    } else if (player.dir === 'up') {
-      P(3, 1, 12, 11, hair);
-      P(4, 0, 10, 2, hair);
-      P(4, 11, 10, 2, skinShade);
-      // backpack
-      P(4, 10, 10, 10, pack);
-      P(4, 10, 10, 3, '#c25a42');
-      P(5, 12, 8, 6, packShade);
-      P(6, 13, 6, 2, '#d97a5f');
-      // arms
-      P(2, 11, 2, 6, shirt);
-      P(14, 11, 2, 6, shirt);
-      P(2, 16, 2, 2, skin);
-      P(14, 16, 2, 2, skin);
-      // legs
-      const la = stepFrame === 1 ? 1 : 0;
-      const lb = stepFrame === 2 ? 1 : 0;
-      P(5, 19, 3, 5 + la, pants);
-      P(10, 19, 3, 5 + lb, pants);
-      P(5, 24 + la, 3, 3, shoe);
-      P(10, 24 + lb, 3, 3, shoe);
-    } else {
-      const flip = player.dir === 'left';
-      const M = function (dx, dy, w, h, color) {
-        const nx = flip ? 18 - dx - w : dx;
-        g.fillStyle = color;
-        g.fillRect(left + nx, top + dy, w, h);
-      };
-      // head
-      M(4, 1, 10, 10, hair);
-      M(5, 3, 8, 6, skin);
-      M(4, 1, 10, 2, hair);
-      M(4, 8, 4, 3, hair);          // hair at the back of the head
-      M(11, 5, 2, 1, '#2b2020');    // eye
-      M(12, 7, 2, 1, skinShade);    // nose
-      // torso
-      M(5, 10, 8, 9, shirt);
-      M(5, 10, 2, 9, shirtShade);
-      M(11, 10, 2, 9, shirtShade);
-      M(9, 10, 2, 3, '#9db3d6');
-      // arm swings
-      const armY = stepFrame === 1 ? 1 : 0;
-      M(13, 11 - armY, 2, 5, shirt);
-      M(13, 15 - armY, 2, 2, skin);
-      M(3, 11 + armY, 2, 5, shirtShade);
-      M(3, 15 + armY, 2, 2, skinShade);
-      // legs
-      const la = stepFrame === 1 ? 1 : 0;
-      const lb = stepFrame === 2 ? 1 : 0;
-      M(6, 19, 3, 5 + la, pants);
-      M(9, 19, 3, 5 + lb, pants);
-      M(6, 24 + la, 4, 3, shoe);
-      M(9, 24 + lb, 4, 3, shoe);
+    if (room.id === 'lab') {
+      if (!hasClue('q1Card') || !state.solved.q_bpo || !state.solved.q_aht) return byId('pc1');
+      if (!hasClue('q2Card') || !state.solved.q_pitch || !state.solved.q_timezone) return byId('cabinet');
+      if (!hasClue('q3Card') || !state.solved.q_open || !state.solved.q_deescalate) return byId('notebook');
+      if (!BAY_QUESTIONS.every(function (id) { return !!state.solved[id]; })) return byId('bayDoor');
+      if (wingSolvedCount() < WING_QUESTIONS.length) return byId('wingDoor');
+      return byId('exitDoor');
     }
+    if (room.id === 'bay') {
+      if (!state.solved.q_permission || !state.solved.q_signpost) return byId('boothA');
+      if (!state.solved.q_ballpark || !state.solved.q_escalate) return byId('boothB');
+      if (!state.solved.q_warm || !state.solved.q_ftr) return byId('qaBoard');
+      return byId('bayExit');
+    }
+    if (room.id === 'lab2') {
+      if (!state.solved.q_scorecard || !state.solved.q_fatal) return byId('nestingPod');
+      if (!state.solved.q_escalate_rule || !state.solved.q_dsar) return byId('tlDesk');
+      if (!state.solved.q_calibrate || !state.solved.q_nesting) return byId('qaConsole');
+      return byId('wingReturn');
+    }
+    return null;
+  }
+
+  /** Draw a glowing golden compass arrow around the player's feet pointing to the next station. */
+  function drawRadarArrow(g, px, py) {
+    const obj = findNextObjectiveObject();
+    if (!obj || !obj.rectPx) return;
+    const tx = obj.markerPx ? obj.markerPx.x : (obj.rectPx.x + obj.rectPx.w / 2);
+    const ty = obj.markerPx ? obj.markerPx.y : (obj.rectPx.y + obj.rectPx.h / 2);
+    const dx = tx - px;
+    const dy = ty - (py - 8);
+    const dist = Math.hypot(dx, dy);
+    if (dist < 28) return;
+    const angle = Math.atan2(dy, dx);
+    const pulse = 0.72 + 0.25 * Math.sin(performance.now() * 0.006);
+    const r = 22;
+    const ax = px + Math.cos(angle) * r;
+    const ay = (py - 8) + Math.sin(angle) * r;
+
+    g.save();
+    g.translate(ax, ay);
+    g.rotate(angle);
+    g.fillStyle = 'rgba(247, 200, 90, ' + pulse.toFixed(2) + ')';
+    g.beginPath();
+    g.moveTo(7, 0);
+    g.lineTo(-4, -5);
+    g.lineTo(-2, 0);
+    g.lineTo(-4, 5);
+    g.closePath();
+    g.fill();
+    g.restore();
   }
 
   /* ---------- floating markers + target outline --------------------------- */
@@ -5721,6 +7191,9 @@
     bot.roamT = 0;
     bot.maxRoamT = 14;
     bot.pauseT = 0;
+    bot.nearPlayer = false;
+    bot.jargonTimer = 0;
+    bot.jargonCooldown = 0;
     bot.cooldownT = 1.2 + Math.random() * 4.5;
   }
 
@@ -5778,6 +7251,8 @@
         o.bot.roaming = false;
         o.bot.returning = false;
         o.bot.moving = false;
+        o.bot.nearPlayer = false;
+        o.bot.jargonTimer = 0;
         continue;
       }
       if (o.bot.roaming) roamingCount++;
@@ -5794,6 +7269,29 @@
           bot.thought = pickJargonIndex(bot.thought);
           bot.thoughtT = 0;
         }
+        if (bot.jargonCooldown > 0) {
+          bot.jargonCooldown = Math.max(0, bot.jargonCooldown - dt);
+        }
+        /* Proximity-triggered jargon timer: only starts and counts down when the player is near! */
+        const pDist = Math.hypot(player.x - bot.x, player.y - bot.y);
+        if (pDist <= ROAM_JARGON_RANGE && !player.seated) {
+          if (!bot.nearPlayer) {
+            if ((bot.jargonCooldown || 0) <= 0) {
+              bot.nearPlayer = true;
+              bot.jargonTimer = ROAM_JARGON_DURATION;
+              if (bot.thought == null || bot.thought < 0) bot.thought = pickJargonIndex(-1);
+              bot.pauseT = Math.max(bot.pauseT || 0, 2.2);
+            }
+          } else {
+            bot.jargonTimer = Math.max(0, (bot.jargonTimer || 0) - dt);
+          }
+        } else if (pDist > ROAM_JARGON_RANGE + 8 || player.seated) {
+          bot.nearPlayer = false;
+          bot.jargonTimer = 0;
+        } else if (bot.nearPlayer) {
+          bot.jargonTimer = Math.max(0, (bot.jargonTimer || 0) - dt);
+        }
+
         if (bot.roamT >= bot.maxRoamT && !bot.returning) {
           bot.returning = true;
           bot.targetX = bot.homeX;
@@ -5823,6 +7321,8 @@
               bot.returning = false;
               bot.seated = true;
               bot.thought = -1;
+              bot.nearPlayer = false;
+              bot.jargonTimer = 0;
               bot.cooldownT = 6 + Math.random() * 8;
               roamingCount = Math.max(0, roamingCount - 1);
             } else {
@@ -5871,6 +7371,8 @@
           bot.maxRoamT = 13 + Math.random() * 6;
           bot.thought = pickJargonIndex(bot.thought);
           bot.thoughtT = 0;
+          bot.nearPlayer = false;
+          bot.jargonTimer = 0;
           const wp = pickBotWaypoint(o, bot);
           bot.targetX = wp.x;
           bot.targetY = wp.y;
@@ -5883,10 +7385,12 @@
     }
   }
 
-  /** Draws the thought bubble of a seated or roaming student agent in CSS space. */
+  /** Draws the thought bubble of a seated or nearby roaming student agent in CSS space. */
   function drawThoughts(g) {
     const minY = 52;
     const placedRects = [];
+    const mobile = isMobileDevice();
+    const vertical = isVerticalMobile();
 
     const station = player.seated;
     if (station && !Dialogue.open && !Book.open) {
@@ -5894,24 +7398,50 @@
       if (line) {
         const anchorX = (station.chair.x + station.chair.w / 2) * TILE;
         const anchorY = (station.chair.y + station.chair.h) * TILE - 30;
-        drawThoughtBubble(g, anchorX, anchorY, line, station.bot ? station.bot.name : null, minY, placedRects);
+        drawThoughtBubble(g, anchorX, anchorY, line, station.bot ? station.bot.name : null, minY, placedRects, {
+          mobile: mobile,
+          vertical: vertical,
+          timer: 0
+        });
       }
+      return;
     }
 
-    /* Roaming students sharing helpful BPO jargons around the floor */
+    /* Roaming students sharing helpful BPO jargons ONLY when the player is near and timer is active */
     if (room && room.objects && !Dialogue.open && !Book.open) {
+      let nearestBot = null;
+      let nearestDist = Infinity;
       for (let i = 0; i < room.objects.length; i++) {
         const o = room.objects[i];
         const bot = o.bot;
         if (!bot || !bot.roaming || player.seated === o) continue;
-        const rLine = BOT_LINES[bot.thought];
-        if (!rLine) continue;
-        drawThoughtBubble(g, bot.x, bot.y - 28, rLine, bot.name, minY, placedRects);
+        const d = Math.hypot(player.x - bot.x, player.y - bot.y);
+        if (d <= ROAM_JARGON_RANGE && !bot.nearPlayer && (bot.jargonCooldown || 0) <= 0) {
+          bot.nearPlayer = true;
+          bot.jargonTimer = ROAM_JARGON_DURATION;
+          if (bot.thought == null || bot.thought < 0) bot.thought = pickJargonIndex(-1);
+        }
+        if (d <= ROAM_JARGON_RANGE + 8 && bot.jargonTimer > 0 && d < nearestDist) {
+          nearestDist = d;
+          nearestBot = bot;
+        }
+      }
+      if (nearestBot) {
+        const rLine = BOT_LINES[nearestBot.thought];
+        if (rLine) {
+          drawThoughtBubble(g, nearestBot.x, nearestBot.y - 28, rLine, nearestBot.name, minY, placedRects, {
+            mobile: mobile,
+            vertical: vertical,
+            timer: nearestBot.jargonTimer,
+            maxTimer: ROAM_JARGON_DURATION
+          });
+        }
       }
     }
   }
 
   /* ---------- viewport sizing --------------------------------------------- */
+  let _mobileAutoCollapsed = false;
   function buildVignette() {
     vignette.width = frame.width;
     vignette.height = frame.height;
@@ -5953,6 +7483,12 @@
     view.cssH = cssH;
     view.offW = Math.max(220, Math.round(cssW / S));
     view.offH = Math.max(220, Math.round(cssH / S));
+
+    if (!_mobileAutoCollapsed && isMobileDevice()) {
+      _mobileAutoCollapsed = true;
+      toggleRoomPanel(true);
+      toggleMissionPanel(true);
+    }
 
     frame.width = view.offW;
     frame.height = view.offH;
@@ -6054,11 +7590,12 @@
   /** XP needed to walk from `level` to `level + 1`. Gentle early, slower later. */
   function xpForLevel(level) { return 90 + (level - 1) * 70; }
   const STARTER_XP = 30;
+  const STARTER_COINS = 15;
 
   const PROG = {
     xp: STARTER_XP,
     level: 1,
-    coins: 0,
+    coins: STARTER_COINS,
     streak: 0,
     bestStreak: 0,
     correct: 0,
@@ -6355,12 +7892,15 @@
       PROG.correct++;
       PROG.streak++;
       PROG.bestStreak = Math.max(PROG.bestStreak, PROG.streak);
-      const xp = firstTry ? 40 : 22;
+      const headsetBonus = (state.perks && state.perks.headset) ? 5 : 0;
+      const xp = (firstTry ? 40 : 22) + headsetBonus;
       const coins = firstTry ? 5 : 2;
       this.addXp(xp);
       this.addCoins(coins);
       if (el.quizXp) {
-        el.quizXp.innerHTML = 'Reward <b>+' + xp + ' XP</b> · <b>+' + coins + ' ◎</b>' +
+        el.quizXp.innerHTML = 'Reward <b>+' + xp + ' XP</b>' +
+          (headsetBonus ? ' <span class="streak-tag">(+5 Headset)</span>' : '') +
+          ' · <b>+' + coins + ' ◎</b>' +
           ' <span class="streak-tag">· streak ▲ ' + PROG.streak + '</span>';
       }
       popChip(el.streakChip);
@@ -6441,7 +7981,7 @@
     },
 
     reset() {
-      PROG.xp = STARTER_XP; PROG.level = 1; PROG.coins = 0;
+      PROG.xp = STARTER_XP; PROG.level = 1; PROG.coins = STARTER_COINS;
       PROG.streak = 0; PROG.bestStreak = 0;
       PROG.correct = 0; PROG.wrong = 0;
       PROG.achievements = {};
@@ -6799,6 +8339,12 @@
   /* ---------- Robi's speech bubble (drawn in CSS space on `vis`) ---------- */
   function drawRobotBubble(g) {
     if (ROBOT.sayT <= 0 || !ROBOT.sayLines.length) return;
+    if (isMobileDevice() && room && room.objects) {
+      for (let i = 0; i < room.objects.length; i++) {
+        const b = room.objects[i].bot;
+        if (b && b.roaming && b.jargonTimer > 0) return;
+      }
+    }
     g.save();
     g.font = '600 12px "Segoe UI", "Trebuchet MS", system-ui, -apple-system, sans-serif';
     g.textBaseline = 'top';
@@ -7091,6 +8637,9 @@
     getState: function () {
       return {
         roomId: state.roomId,
+        playerName: state.playerName,
+        playerGender: state.playerGender,
+        perks: Object.assign({}, state.perks),
         started: state.started,
         paused: state.paused,
         completed: state.completed,
@@ -7137,6 +8686,7 @@
     teleport: function (tileX, tileY) {
       player.x = tileX * TILE; player.y = tileY * TILE;
       updateCamera(0, true);
+      checkExitTrigger();
     },
     interact: tryInteract,
     travelTo: travelTo,
@@ -7170,15 +8720,28 @@
       return room.objects.filter(o => o.bot).map(o => ({
         station: o.id, name: o.bot.name, seated: o.bot.seated,
         roaming: !!o.bot.roaming,
+        nearPlayer: !!o.bot.nearPlayer,
+        jargonTimer: +(o.bot.jargonTimer || 0).toFixed(2),
         x: Math.round(o.bot.x || 0), y: Math.round(o.bot.y || 0),
         thought: BOT_LINES[o.bot.thought] || null
       }));
     },
     stepBots: updateBots,
+    drawThoughts: drawThoughts,
+    isMobile: isMobileDevice,
+    isVerticalMobile: isVerticalMobile,
+    resize: resize,
     advance: function () { Dialogue.advance(); },
     useLetterHint: function () { Dialogue.useLetterHint(); },
     toggleRoom: toggleRoomPanel,
     toggleMission: toggleMissionPanel,
+    openProfile: openProfileModal,
+    openPerks: openPerksModal,
+    closePerks: closePerksModal,
+    buyPerk: buyPerk,
+    skipCutscene: finishExitCutscene,
+    drawCutsceneFrame: drawExitCutsceneFrame,
+    isCutscenePlaying: function () { return outroActive; },
     reset: resetGame,
 
     /* screens */
