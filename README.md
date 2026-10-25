@@ -262,7 +262,7 @@ slightly deeper cream with a teal rule, and the ★ review answers appear in a d
 stand at a chair   →  prompt "Sit at Student PC 01", button reads SIT DOWN
 E / Sit down       →  your character sits facing the monitor, the agent steps aside,
                       and a bubble appears: "ANA · IDIOM  \"Touch base\" — a quick follow-up call"
-E / Use PC         →  the terminal's review questions (Q1–Q4) open
+E / Use PC         →  the terminal's review questions (Term 1–3) open
 Space / Stand      →  you step out in front of the chair and the agent sits back down
 ```
 
@@ -295,7 +295,7 @@ Exit door panel ────────── Q4: the email subject line ──
 ```
 
 Three review cards plus all four quarters are required before the exit opens, so the student
-cannot finish the room without touching Q1–Q4.
+cannot finish the room without touching Term 1–3.
 
 ---
 

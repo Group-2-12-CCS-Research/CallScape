@@ -2,7 +2,7 @@
    CallScape — script.js
    A top-down pixel-art escape-room review game for Grade 11 students of
    CONTACT CENTER SERVICES (CCS) at Emilio Jacinto National High School.
-   Review scope: Quarter 1 to Quarter 4 of the CCS subject.
+   Review scope: Term 1 to Term 3 of the CCS subject.
 
    Everything here is vanilla JavaScript. The file is organised in clear
    sections so the engine pieces stay separate even though they ship together:
@@ -135,21 +135,21 @@
   const ITEMS = {
     q1Card: {
       icon: '☎',
-      title: 'Quarter 1 Review Card',
+      title: 'Term 1 Review Card',
       desc: 'BPO = Business Process Outsourcing. AHT = (talk + hold + ACW) ÷ calls handled — the average time spent handling one contact.',
-      ref: 'Q1 › Jargons & metrics'
+      ref: 'Term 1 › Jargons & metrics'
     },
     q2Card: {
       icon: '◍',
-      title: 'Quarter 2 Review Card',
+      title: 'Term 2 Review Card',
       desc: 'Pitch is how high or low the voice is. Manila is UTC+8 and New York is UTC−5, so New York is 13 hours behind Manila.',
-      ref: 'Q2 › Paralanguage & voice'
+      ref: 'Term 2 › Paralanguage & voice'
     },
     q3Card: {
       icon: '✎',
-      title: 'Quarter 3 Review Card',
+      title: 'Term 3 Review Card',
       desc: 'Open questions invite a full answer. De-escalation starts with listening — let the customer finish before you clarify and act.',
-      ref: 'Q3 › Complaint handling'
+      ref: 'Term 3 › Complaint handling'
     },
     /* Bonus card from the Mock Call Bay. It is NOT one of the three cards the
        exit panel demands — it is extra credit, tracked separately. */
@@ -157,7 +157,7 @@
       icon: '★',
       title: 'Mock Call Bay Bonus Card',
       desc: 'Ask permission before hold · signpost the steps · a ballpark figure is a rough estimate · escalate above your limit · brief the next agent (warm transfer) · first-time-right in the back office.',
-      ref: 'Q3 › Escalation & handoffs'
+      ref: 'Term 3 › Escalation & handoffs'
     }
   };
 
@@ -239,9 +239,22 @@
     { tag: 'note', text: 'Stuck? Ask your team leader early rather than guessing on a live call.' }
   ];
 
-  /* Facts, tips and idioms heard on a contact center floor. */
+  /* Facts, tips, jargons and idioms heard on a contact center floor. */
   const BOT_LINES = [
-    { tag: 'fact',  text: 'AHT = (talk + hold + ACW) ÷ calls handled. Beat the target and the floor board loves you.' },
+    { tag: 'jargon', text: 'BPO stands for Business Process Outsourcing — hiring an outside company to handle business operations.' },
+    { tag: 'jargon', text: 'AHT (Average Handle Time) = (Talk + Hold + ACW) ÷ calls handled. It tracks average total time per contact.' },
+    { tag: 'jargon', text: 'Floor tools: ACD routes calls to the next agent, CRM stores customer records, IVR is the phone menu.' },
+    { tag: 'jargon', text: 'Voice control: PITCH is how high or low your voice sounds. Projection is volume; pacing is speed.' },
+    { tag: 'jargon', text: 'Time zones: Manila (UTC+8) and New York (UTC−5) are 13 hours apart — New York is 13 hours behind Manila.' },
+    { tag: 'jargon', text: 'Probing: OPEN questions (Who, What, When, Where, Why, How) invite a full answer instead of yes/no.' },
+    { tag: 'jargon', text: 'De-escalation Step 1 is LISTEN — let the customer finish speaking before you empathize, clarify and act.' },
+    { tag: 'jargon', text: 'Email etiquette: the SUBJECT line states the purpose of an email in a few words plus the ticket reference.' },
+    { tag: 'jargon', text: 'OMNICHANNEL links phone, email, chat and social media so every channel shares one customer history.' },
+    { tag: 'jargon', text: 'Hold etiquette: always ask PERMISSION and state a time estimate before placing a caller on hold.' },
+    { tag: 'jargon', text: 'SIGNPOSTING means telling the caller the steps ahead ("First I will check your bill, then...").' },
+    { tag: 'jargon', text: '"BALLPARK figure" is floor slang for a rough estimate — confirm the exact amount in the CRM.' },
+    { tag: 'jargon', text: 'ESCALATE requests above your authority limit, and use a WARM transfer to brief the next agent first.' },
+    { tag: 'jargon', text: 'FIRST-TIME-RIGHT (FTR) is the back-office standard: complete and accurate on the very first submission.' },
     { tag: 'fact',  text: 'Smiling is audible. Agents smile before the system dials.' },
     { tag: 'fact',  text: 'If it is not in the CRM, it did not happen.' },
     { tag: 'fact',  text: 'CSAT is the customer\'s score. QA score is ours. Chase both.' },
@@ -277,6 +290,9 @@
     { tag: 'idiom', text: '"Keep me in the loop" — your team leader wants the update before the customer complains.' },
     { tag: 'fact',  text: 'Nesting is the supervised week when a new agent takes live contacts. Ask everything then.' },
     /* ── heard in the QA & Escalation Wing (Room 2) ── */
+    { tag: 'jargon', text: 'QA scores sampled calls on a SCORECARD. One FATAL error zeroes the whole contact.' },
+    { tag: 'jargon', text: 'CALIBRATION is when QA analysts and TLs score the same call together to align standards.' },
+    { tag: 'jargon', text: 'Under RA 10173, a customer asking for their records files a Data Subject ACCESS Request (DSAR).' },
     { tag: 'fact',  text: 'QA samples two to four contacts a week and scores them against the scorecard.' },
     { tag: 'fact',  text: 'One fatal error zeroes the whole sample. Verification before anything else.' },
     { tag: 'fact',  text: 'Calibration is why you can appeal a score and win: same call, same marks.' },
@@ -327,7 +343,7 @@
       touch: { x: 3.3, y: 3.5 },          // stand-here point (inside the room)
       marker: { x: 3.3, y: 3.02 },
       interact: 'bookshelf',
-      opensBook: 'q1',                    // walking up to it opens the handbook
+      opensBook: 't1',                    // walking up to it opens the handbook
       priority: 6
     },
     {
@@ -479,7 +495,7 @@
         touch: { x: 3.0, y: 3.5 },
         marker: { x: 3.0, y: 3.02 },
         interact: 'bayShelf',
-        opensBook: 'q3',
+        opensBook: 't3',
         priority: 6
       },
 
@@ -600,14 +616,14 @@
        { text: '...', quiz: 'q', card: 'id', onSolved: fn }
        { text: '...', action: fn }            → runs fn when the step is shown
      A `card` on a quiz step is only granted once that question is solved.
-     Each station asks TWO questions — one per station topic — so all four
-     quarters of the subject are reviewed before the exit opens. */
+     Each station asks TWO questions — covering all three terms of the
+     subject before the exit opens. */
   const CONTENT = {
     bookshelf: function () {
       return [
         {
           text: 'The shelf holds the training references. The thickest binder is the ' +
-                '**CCS Operations Manual** — Quarter 1 to Quarter 4, with call scripts, ' +
+                '**CCS Operations Manual** — Term 1 to Term 3, with call scripts, ' +
                 'email templates and the metric formulas.\n\n' +
                 'The label on the spine reads: "EVERYTHING THE TRAINING TERMINALS ASK ' +
                 'IS IN HERE."'
@@ -631,14 +647,14 @@
         },
         {
           text: 'A smaller typed memo is pinned underneath:\n\n' +
-                '"Review scope for the quarterly exam: **Q1** operations, tools and the ' +
-                'BPO industry; **Q2** communication and culture; **Q3** inbound and ' +
-                'outbound calls; **Q4** non-voice and digital channels."'
+                '"Review scope for the term exam: **Term 1** operations, tools and the ' +
+                'BPO industry; **Term 2** communication, voice and culture; **Term 3** ' +
+                'inbound/outbound calls, non-voice and digital channels."'
         }
       ];
     },
 
-    /* ── Station 1 · Quarter 1 (industry + metrics) ── */
+    /* ── Station 1 · Term 1 (industry + metrics) ── */
     pc1: function () {
       return [
         {
@@ -648,8 +664,8 @@
                 'headset, and the numbers that decide whether you did well."\n\n' +
                 'Two review prompts are blinking in the corner.'
         },
-        { text: 'TERMINAL 01 — QUARTER 1 REVIEW (1 of 2)', quiz: 'q_bpo' },
-        { text: 'TERMINAL 01 — QUARTER 1 REVIEW (2 of 2)', quiz: 'q_aht', card: 'q1Card' },
+        { text: 'TERMINAL 01 — TERM 1 REVIEW (1 of 2)', quiz: 'q_bpo' },
+        { text: 'TERMINAL 01 — TERM 1 REVIEW (2 of 2)', quiz: 'q_aht', card: 'q1Card' },
         {
           text: 'The terminal unlocks the orientation files and prints a review card. ' +
                 'Clue saved to your journal.\n\n' +
@@ -690,18 +706,18 @@
       ];
     },
 
-    /* ── Station 2 · Quarter 2 (voice + culture) ── */
+    /* ── Station 2 · Term 2 (voice + culture) ── */
     cabinet: function () {
       return [
         {
           text: 'A tall steel cabinet with a keypad. A laminated coaching card is taped ' +
                 'to it:\n\n' +
-                '"FLOOR KEY — two questions on Quarter 2. Answer both and the cabinet ' +
+                '"FLOOR KEY — two questions on Term 2. Answer both and the cabinet ' +
                 'opens."\n\n' +
                 'Below the keypad a red light blinks.'
         },
-        { text: 'CABINET KEYPAD — QUARTER 2 (1 of 2)', quiz: 'q_pitch' },
-        { text: 'CABINET KEYPAD — QUARTER 2 (2 of 2)', quiz: 'q_timezone', card: 'q2Card' },
+        { text: 'CABINET KEYPAD — TERM 2 (1 of 2)', quiz: 'q_pitch' },
+        { text: 'CABINET KEYPAD — TERM 2 (2 of 2)', quiz: 'q_timezone', card: 'q2Card' },
         {
           text: 'The light turns green. The cabinet clicks open and you take the spare ' +
                 'floor key plus the printed coaching card. Clue saved to your journal.'
@@ -709,7 +725,7 @@
       ];
     },
 
-    /* ── Station 3 · Quarter 3 (call skills) ── */
+    /* ── Station 3 · Term 3 (call skills) ── */
     notebook: function () {
       return [
         {
@@ -720,16 +736,16 @@
                 '  open questions widen · closed questions confirm\n' +
                 '  1 ?  2 Empathize  3 Clarify  4 Act  5 Confirm'
         },
-        { text: "TEACHER'S NOTEBOOK — QUARTER 3 (1 of 2)", quiz: 'q_open' },
-        { text: "TEACHER'S NOTEBOOK — QUARTER 3 (2 of 2)", quiz: 'q_deescalate', card: 'q3Card' },
+        { text: "TEACHER'S NOTEBOOK — TERM 3 (1 of 2)", quiz: 'q_open' },
+        { text: "TEACHER'S NOTEBOOK — TERM 3 (2 of 2)", quiz: 'q_deescalate', card: 'q3Card' },
         {
           text: 'You copy the page into your journal. The bottom line is circled twice: ' +
-                '"EXIT PANEL: Quarter 4 — the email field and the shared-context model."'
+                '"EXIT PANEL: Term 3 Final Check — the email field and the shared-context model."'
         }
       ];
     },
 
-    /* ── Station 4 · Quarter 4 (non-voice) then the door ── */
+    /* ── Station 4 · Term 3 Final Check (non-voice) then the door ── */
     door: function () {
       const found = state.clues.length;
       if (state.doorOpen) {
@@ -750,10 +766,10 @@
         return [
           {
             text: 'The panel scans your three review cards and turns amber.\n\n' +
-                  '"FINAL CHECK — Quarter 4: non-voice and digital channels."'
+                  '"FINAL CHECK — Term 3: non-voice and digital channels."'
           },
-          { text: 'EXIT PANEL — QUARTER 4 (1 of 2)', quiz: 'q_subject' },
-          { text: 'EXIT PANEL — QUARTER 4 (2 of 2)', quiz: 'q_omni', onSolved: openDoor }
+          { text: 'EXIT PANEL — TERM 3 FINAL CHECK (1 of 2)', quiz: 'q_subject' },
+          { text: 'EXIT PANEL — TERM 3 FINAL CHECK (2 of 2)', quiz: 'q_omni', onSolved: openDoor }
         ];
       }
       return [{ text: 'The panel is still waiting for you to step through.' }];
@@ -1034,13 +1050,13 @@
   /* Send the student to the right place based on what is still missing. */
   function missingClueHint() {
     if (!hasClue('q1Card')) {
-      return 'Aim: terminal 01 in the front row is still logged in. It is asking Quarter 1 questions.';
+      return 'Aim: terminal 01 in the front row is still logged in. It is asking Term 1 questions.';
     }
     if (!hasClue('q2Card')) {
-      return 'Aim: the steel cabinet by the right wall has a keypad. It is asking Quarter 2 questions.';
+      return 'Aim: the steel cabinet by the right wall has a keypad. It is asking Term 2 questions.';
     }
     if (!hasClue('q3Card')) {
-      return "Aim: Ms. Reyes' desk at the front of the room holds an open notebook. It is asking Quarter 3 questions.";
+      return "Aim: Ms. Reyes' desk at the front of the room holds an open notebook. It is asking Term 3 questions.";
     }
     return 'Aim: head to the exit door on the right wall.';
   }
@@ -2093,14 +2109,13 @@
   /** Which handbook chapter answers this question? (derived from `topic`) */
   function bookChapterFor(qid) {
     const q = Questions.get(qid);
-    if (!q) return 'q1';
+    if (!q) return 't1';
     const t = String(q.topic || '').toLowerCase();
-    if (t.indexOf('quarter 1') === 0 || t === 'q1') return 'q1';
-    if (t.indexOf('quarter 2') === 0 || t === 'q2') return 'q2';
-    if (t.indexOf('quarter 3') === 0 || t === 'q3') return 'q3';
-    if (t.indexOf('quarter 4') === 0 || t === 'q4') return 'q4';
-    if (t.indexOf('qa') === 0 || t.indexOf('qa wing') !== -1) return state.room2Unlocked ? 'qa' : 'q1';
-    return 'q1';
+    if (t.indexOf('term 1') === 0 || t === 't1' || t.indexOf('quarter 1') === 0 || t === 'q1') return 't1';
+    if (t.indexOf('term 2') === 0 || t === 't2' || t.indexOf('quarter 2') === 0 || t === 'q2') return 't2';
+    if (t.indexOf('term 3') === 0 || t === 't3' || t.indexOf('quarter 3') === 0 || t === 'q3' || t.indexOf('quarter 4') === 0 || t === 'q4') return 't3';
+    if (t.indexOf('qa') === 0 || t.indexOf('qa wing') !== -1) return state.room2Unlocked ? 'qa' : 't1';
+    return 't1';
   }
 
   function attemptLabel(qid) {
@@ -2197,7 +2212,7 @@
     if (e.code === 'KeyB') {
       if (Dialogue.open) { Book.show(guessBookChapter()); return; }
       if (Book.open) { Book.close(); return; }
-      if (!el.menu.hidden) { Book.show('q1'); return; }
+      if (!el.menu.hidden) { Book.show('t1'); return; }
       if (state.started && !roundOver()) Book.show(guessBookChapter());
       return;
     }
@@ -2698,6 +2713,9 @@
     player.dir = 'up';
     clearMovement();
     if (station.bot) {
+      station.bot.roaming = false;
+      station.bot.returning = false;
+      station.bot.moving = false;
       station.bot.seated = false;          // the agent gives up the chair
       station.bot.thoughtT = 0;
       nextThought(station.bot, true);      // fresh line every time you sit
@@ -2720,8 +2738,12 @@
     if (!station) return false;
     player.seated = null;
     if (station.bot) {
+      station.bot.roaming = false;
+      station.bot.returning = false;
+      station.bot.moving = false;
       station.bot.seated = true;
       station.bot.thought = -1;
+      station.bot.cooldownT = 6 + Math.random() * 6;
     } else {
       player.selfThought = -1;
     }
@@ -2781,12 +2803,37 @@
     bot.thoughtT = 0;
   }
 
-  /** Talk to the agent you are sitting beside. */
+  /** Talk to the agent you are sitting beside, or a nearby roaming student. */
+  function nearestRoamingBot() {
+    if (!room || !room.objects) return null;
+    const px = player.x;
+    const py = player.y;
+    let best = null;
+    for (let i = 0; i < room.objects.length; i++) {
+      const o = room.objects[i];
+      if (!o.bot || !o.bot.roaming) continue;
+      const d = Math.hypot(px - o.bot.x, py - o.bot.y);
+      if (d <= INTERACT_RANGE + 14 && (!best || d < best.d)) {
+        best = { obj: o, bot: o.bot, d: d };
+      }
+    }
+    return best ? best.bot : null;
+  }
+
   function askBot() {
     const station = player.seated;
-    if (!station || !station.bot) return null;
-    nextThought(station.bot, true);
-    return BOT_LINES[station.bot.thought];
+    if (station && station.bot) {
+      nextThought(station.bot, true);
+      return BOT_LINES[station.bot.thought];
+    }
+    const roamer = nearestRoamingBot();
+    if (roamer) {
+      roamer.thought = pickJargonIndex(roamer.thought);
+      roamer.thoughtT = 0;
+      roamer.pauseT = Math.max(roamer.pauseT || 0, 4.0);
+      return BOT_LINES[roamer.thought];
+    }
+    return null;
   }
 
   const STUDY_OBJECTS = { poster: 15, pc2: 15, coachSheet: 15, rack: 15 };
@@ -2820,6 +2867,16 @@
 
     const target = nearestInteractable();
     if (!target) {
+      const roamer = nearestRoamingBot();
+      if (roamer) {
+        roamer.thought = pickJargonIndex(roamer.thought);
+        roamer.thoughtT = 0;
+        roamer.pauseT = 4.5;
+        Sound.interact();
+        const line = BOT_LINES[roamer.thought];
+        toast(roamer.name + ': "' + (line ? line.text : '') + '"', 'info');
+        return;
+      }
       toast('Nothing close enough to inspect.', 'info');
       return;
     }
@@ -3077,7 +3134,7 @@
              '<div class="stat__v">' + r[1] + '</div></div>';
     }).join('');
     el.completeSub.textContent = accuracy >= 80
-      ? 'You escaped the CCS training floor. Solid review — bring that to the quarterly exam.'
+      ? 'You escaped the CCS training floor. Solid review — bring that to the term exam.'
       : 'You escaped the CCS training floor. Read the handbook once more before the exam.';
   }
 
@@ -3533,7 +3590,9 @@
         this.open = true;
       }
       const firstOpen = !this.open;
-      this.chapterId = chapterId || d.chapters[0].id;
+      const aliasMap = { q1: 't1', q2: 't2', q3: 't3', q4: 't3' };
+      const resolvedId = aliasMap[chapterId] || chapterId;
+      this.chapterId = resolvedId || d.chapters[0].id;
       state.paused = true;
       clearMovement();
       el.book.hidden = false;
@@ -4009,7 +4068,7 @@
     }
     if (el.quizBookLink) {
       el.quizBookLink.addEventListener('click', function () {
-        Book.show(this.dataset.chapter || 'q1');
+        Book.show(this.dataset.chapter || 't1');
       });
     }
     if (el.roomPanel) {
@@ -4082,7 +4141,7 @@
     /* main menu */
     el.btnResume.addEventListener('click', resumeSave);
     el.btnNewGame.addEventListener('click', beginNewGame);
-    el.btnMenuBook.addEventListener('click', function () { Book.show('q1'); });
+    el.btnMenuBook.addEventListener('click', function () { Book.show('t1'); });
     el.btnMenuSettings.addEventListener('click', function () { openSettings(true); });
     el.btnMenuHelp.addEventListener('click', function () {
       el.menuHelp.hidden = !el.menuHelp.hidden;
@@ -4179,10 +4238,9 @@
   /** Best guess at which chapter the student needs right now. */
   function guessBookChapter() {
     if (room && room.id === 'lab2' && state.room2Unlocked) return 'qa';
-    if (!hasClue('q1Card')) return 'q1';
-    if (!hasClue('q2Card')) return 'q2';
-    if (!hasClue('q3Card')) return 'q3';
-    if (!state.solved.q_subject || !state.solved.q_omni) return 'q4';
+    if (!hasClue('q1Card')) return 't1';
+    if (!hasClue('q2Card')) return 't2';
+    if (!hasClue('q3Card') || !state.solved.q_subject || !state.solved.q_omni) return 't3';
     if (state.room2Unlocked) return 'qa';
     return 'glossary';
   }
@@ -4508,6 +4566,7 @@
           if (o.bot) {
             r.visuals.push({
               depth: (o.chair.y + o.chair.h) * TILE + 1,
+              botObj: o,
               draw: function (g) { drawAgent(g, o); }
             });
           }
@@ -4532,6 +4591,7 @@
           }
           if (o.bot) {
             r.visuals.push({ depth: (o.chair.y + o.chair.h) * TILE + 1,
+                             botObj: o,
                              draw: function (g) { drawAgent(g, o); } });
           }
           break;
@@ -5078,12 +5138,17 @@
     fill(g, r.x + r.w / 2 - 3, r.y, 6, 4, '#5b6a84');
   }
 
-  /* ---------- the agents at the desks ------------------------------------- */
+  /* ---------- the agents at the desks & roaming in the aisles ------------- */
   function drawAgent(g, o) {
     const bot = o.bot;
     if (!bot) return;
     const look = bot.look || { shirt: '#3f7d9c', hair: '#2a1d18' };
     const cx = (o.chair.x + o.chair.w / 2) * TILE;
+
+    if (bot.roaming && player.seated !== o) {
+      drawRoamingAgent(g, bot, look);
+      return;
+    }
 
     if (bot.seated && player.seated !== o) {
       drawSeatedFigure(g, cx, (o.chair.y + o.chair.h) * TILE, look, false);
@@ -5113,6 +5178,95 @@
     fill(g, ax - 5, ay - 36, 11, 3, look.hair);
     fill(g, ax - 3, ay - 28, 2, 1, '#2b2020');
     fill(g, ax + 2, ay - 28, 2, 1, '#2b2020');
+  }
+
+  /** Walking / standing student agent roaming the floor and sharing jargons. */
+  function drawRoamingAgent(g, bot, look) {
+    const x = Math.round(bot.x);
+    const y = Math.round(bot.y);
+    const walking = !!bot.moving;
+    const phase = Math.floor((bot.animT || 0) * 8) % 4;
+    const stepFrame = walking ? [0, 1, 0, 2][phase] : 0;
+    const bob = walking && stepFrame !== 0 ? -1 : 0;
+    const left = x - 9;
+    const top = y - 27 + bob;
+
+    // ground shadow
+    g.fillStyle = 'rgba(8,5,14,0.34)';
+    g.fillRect(x - 8, y - 3, 16, 3);
+    g.fillRect(x - 5, y - 4, 10, 1);
+
+    const P = function (dx, dy, w, h, color) {
+      g.fillStyle = color;
+      g.fillRect(left + dx, top + dy, w, h);
+    };
+
+    const skin = '#e6b183';
+    const skinShade = '#c48f62';
+    const hair = look.hair || '#2a1d18';
+    const shirt = look.shirt || '#3f7d9c';
+    const pants = '#2d3654';
+    const pantsShade = '#212940';
+    const shoe = '#191724';
+    const dir = bot.dir || 'down';
+
+    if (dir === 'up') {
+      P(3, 1, 12, 11, hair);
+      P(4, 0, 10, 2, hair);
+      P(4, 11, 10, 2, skinShade);
+      P(4, 9, 10, 9, shirt);
+      P(2, 10, 2, 6, shirt);
+      P(14, 10, 2, 6, shirt);
+      P(2, 15, 2, 2, skin);
+      P(14, 15, 2, 2, skin);
+      const la = stepFrame === 1 ? 1 : 0;
+      const lb = stepFrame === 2 ? 1 : 0;
+      P(5, 18, 3, 5 + la, pants);
+      P(10, 18, 3, 5 + lb, pants);
+      P(5, 23 + la, 3, 3, shoe);
+      P(10, 23 + lb, 3, 3, shoe);
+    } else if (dir === 'left' || dir === 'right') {
+      const flip = dir === 'left';
+      const fx = function (dx, w) { return flip ? (18 - dx - w) : dx; };
+      P(fx(4, 10), 0, 10, 4, hair);
+      P(fx(3, 5), 2, 5, 7, hair);
+      P(fx(6, 7), 4, 7, 5, skin);
+      P(fx(11, 2), 6, 2, 1, '#2b2020');
+      P(fx(5, 8), 9, 8, 9, shirt);
+      const sw = stepFrame === 1 ? 1 : stepFrame === 2 ? -1 : 0;
+      P(fx(7 + sw, 3), 10, 3, 6, shirt);
+      P(fx(7 + sw, 3), 15, 3, 2, skin);
+      const la = stepFrame === 1 ? -1 : stepFrame === 2 ? 1 : 0;
+      const lb = -la;
+      P(fx(6 + la, 3), 18, 3, 5, pantsShade);
+      P(fx(6 + la, 4), 23, 4, 3, shoe);
+      P(fx(8 + lb, 3), 18, 3, 5, pants);
+      P(fx(8 + lb, 4), 23, 4, 3, shoe);
+    } else {
+      // facing down
+      P(4, 0, 10, 3, hair);
+      P(3, 2, 12, 3, hair);
+      P(3, 4, 2, 5, hair);
+      P(13, 4, 2, 5, hair);
+      P(5, 4, 8, 5, skin);
+      P(5, 3, 8, 1, hair);
+      P(7, 6, 2, 1, '#2b2020');
+      P(10, 6, 2, 1, '#2b2020');
+      P(8, 8, 3, 1, skinShade);
+      P(4, 9, 10, 9, shirt);
+      P(7, 9, 4, 2, 'rgba(255,255,255,0.22)');
+      P(8, 11, 2, 4, '#f7c85a'); // lanyard badge
+      P(2, 10, 2, 6, shirt);
+      P(14, 10, 2, 6, shirt);
+      P(2, 15, 2, 2, skin);
+      P(14, 15, 2, 2, skin);
+      const la = stepFrame === 1 ? 1 : 0;
+      const lb = stepFrame === 2 ? 1 : 0;
+      P(5, 18, 3, 5 + la, pants);
+      P(10, 18, 3, 5 + lb, pants);
+      P(5, 23 + la, 3, 3, shoe);
+      P(10, 23 + lb, 3, 3, shoe);
+    }
   }
 
   /** Seated figure (a colleague, or the player) facing the monitor. */
@@ -5171,62 +5325,111 @@
     return lines;
   }
 
-  /** Draws the agent's "mind" above their head while you sit with them. */
-  function drawThoughtBubble(g, anchorX, anchorY, line, name, minY) {
+  /** Draws the agent's speech/thought bubble in crisp CSS screen space on `vis`. */
+  function drawThoughtBubble(g, anchorX, anchorY, line, name, minY, placedRects) {
     if (!line) return;
     g.save();
-    g.font = '7px "Courier New", monospace';
+    const bodyFont = '600 13px "Segoe UI", "Trebuchet MS", system-ui, -apple-system, sans-serif';
+    const tagFont = 'bold 11px "Segoe UI", "Trebuchet MS", system-ui, -apple-system, sans-serif';
+    g.font = bodyFont;
     g.textBaseline = 'alphabetic';
 
-    const maxW = 150;
+    const cssW = view.cssW || 800;
+    const cssH = view.cssH || 600;
+    const maxW = Math.min(268, Math.max(176, cssW - 36));
     const lines = wrapText(g, line.text, maxW);
     let textW = 0;
     lines.forEach(function (l) { textW = Math.max(textW, g.measureText(l).width); });
 
-    const padX = 7;
-    const padY = 6;
-    const tagH = 9;
-    const boxW = Math.min(maxW + padX * 2, Math.ceil(textW) + padX * 2);
-    const boxH = tagH + lines.length * 10 + padY + 3;
-    let bx = Math.round(anchorX - boxW / 2);
-    let by = Math.round(anchorY - boxH - 34);   // clears the interaction prompt
+    const label = line.tag === 'jargon' ? 'JARGON' : line.tag === 'idiom' ? 'IDIOM' : line.tag === 'tip' ? 'TIP'
+                : line.tag === 'note' ? 'MY DESK' : 'FACT';
+    const tag = (name ? name.toUpperCase() + ' · ' : '') + label;
+    g.font = tagFont;
+    const tagW = g.measureText(tag).width + 6;
 
-    // keep the bubble inside the room
-    const worldW = room.cols * TILE;
-    bx = clamp(bx, 4, worldW - boxW - 4);
-    by = Math.max(by, minY == null ? 4 : minY);
+    const padX = 12;
+    const padY = 10;
+    const tagH = 22;
+    const lineH = 18;
+    const boxW = Math.min(maxW + padX * 2, Math.ceil(Math.max(textW, tagW)) + padX * 2);
+    const boxH = tagH + lines.length * lineH + padY + 4;
 
-    // panel
-    g.fillStyle = 'rgba(8,6,16,0.92)';
-    g.fillRect(bx + 1, by + 1, boxW, boxH);
-    g.fillStyle = line.tag === 'idiom' ? '#2b2344' : line.tag === 'note' ? '#1d2a22' : '#1f2a33';
+    const pt = worldToCss(anchorX, anchorY);
+    const sx = pt.x;
+    const sy = pt.y;
+    const gapAbove = (player.seated && line.tag !== 'jargon') ? 26 : 12;
+
+    let bx = Math.round(sx - boxW / 2);
+    let by = Math.round(sy - boxH - gapAbove);
+
+    bx = clamp(bx, 8, Math.max(8, cssW - boxW - 8));
+    by = clamp(by, minY == null ? 8 : minY, Math.max(8, cssH - boxH - 14));
+
+    // Avoid overlapping previously drawn bubbles
+    if (placedRects && placedRects.length) {
+      for (let i = 0; i < placedRects.length; i++) {
+        const r = placedRects[i];
+        const overlapX = bx < r.x + r.w + 6 && bx + boxW + 6 > r.x;
+        const overlapY = by < r.y + r.h + 6 && by + boxH + 6 > r.y;
+        if (overlapX && overlapY) {
+          const tryAbove = r.y - boxH - 8;
+          if (tryAbove >= (minY == null ? 8 : minY)) {
+            by = tryAbove;
+          } else {
+            by = Math.min(cssH - boxH - 14, r.y + r.h + 8);
+          }
+        }
+      }
+      placedRects.push({ x: bx, y: by, w: boxW, h: boxH });
+    }
+
+    const bgFill = line.tag === 'jargon' ? '#1a1330'
+                 : line.tag === 'idiom'  ? '#211838'
+                 : line.tag === 'note'   ? '#14231b'
+                 : '#13202a';
+    const borderCol = line.tag === 'jargon' ? '#f7c85a'
+                    : line.tag === 'idiom'  ? '#d6ad54'
+                    : line.tag === 'note'   ? '#74c686'
+                    : '#74e6d6';
+    const tagCol = (line.tag === 'jargon' || line.tag === 'idiom') ? '#ffd666'
+                 : line.tag === 'note' ? '#9ef0ac'
+                 : '#7cebe0';
+
+    // outer shadow + crisp panel
+    g.fillStyle = 'rgba(5, 3, 12, 0.72)';
+    g.fillRect(bx + 2, by + 3, boxW, boxH);
+    g.fillStyle = bgFill;
     g.fillRect(bx, by, boxW, boxH);
-    g.strokeStyle = line.tag === 'idiom' ? '#c9a24a' : line.tag === 'note' ? '#6fa87a' : '#74e6d6';
-    g.lineWidth = 1;
+    g.strokeStyle = borderCol;
+    g.lineWidth = 1.75;
     g.strokeRect(bx + 0.5, by + 0.5, boxW - 1, boxH - 1);
 
     // tag row
-    g.fillStyle = line.tag === 'idiom' ? '#f7c85a' : line.tag === 'note' ? '#9fd0a8' : '#74e6d6';
-    g.font = 'bold 6px "Courier New", monospace';
-    const label = line.tag === 'idiom' ? 'IDIOM' : line.tag === 'tip' ? 'TIP'
-                : line.tag === 'note' ? 'MY DESK' : 'FACT';
-    const tag = (name ? name.toUpperCase() + ' · ' : '') + label;
-    g.fillText(tag, bx + padX, by + 8);
-    g.fillRect(bx + padX, by + 10, boxW - padX * 2, 1);
+    g.fillStyle = tagCol;
+    g.font = tagFont;
+    g.fillText(tag, bx + padX, by + 15);
+    g.fillStyle = 'rgba(255, 255, 255, 0.16)';
+    g.fillRect(bx + padX, by + 20, boxW - padX * 2, 1);
 
-    // body text
-    g.fillStyle = '#f2ecff';
-    g.font = '7px "Courier New", monospace';
-    lines.forEach(function (l, i) {
-      g.fillText(l, bx + padX, by + 20 + i * 10);
-    });
+    // body text (crisp white with subtle dark shadow for readability)
+    g.font = bodyFont;
+    for (let i = 0; i < lines.length; i++) {
+      const ty = by + tagH + 14 + i * lineH;
+      g.fillStyle = 'rgba(0, 0, 0, 0.75)';
+      g.fillText(lines[i], bx + padX + 1, ty + 1);
+      g.fillStyle = '#ffffff';
+      g.fillText(lines[i], bx + padX, ty);
+    }
 
-    // tail
-    const tailX = clamp(Math.round(anchorX), bx + 10, bx + boxW - 10);
-    g.fillStyle = line.tag === 'idiom' ? '#2b2344' : line.tag === 'note' ? '#1d2a22' : '#1f2a33';
-    g.fillRect(tailX - 3, by + boxH - 1, 7, 3);
-    g.fillRect(tailX - 1, by + boxH + 2, 4, 3);
-    g.fillRect(tailX, by + boxH + 5, 2, 2);
+    // pointer tail
+    const tailX = clamp(Math.round(sx), bx + 14, bx + boxW - 14);
+    g.fillStyle = borderCol;
+    g.fillRect(tailX - 5, by + boxH, 10, 3);
+    g.fillRect(tailX - 3, by + boxH + 3, 6, 3);
+    g.fillRect(tailX - 1, by + boxH + 6, 2, 2);
+    g.fillStyle = bgFill;
+    g.fillRect(tailX - 4, by + boxH - 1, 8, 3);
+    g.fillRect(tailX - 2, by + boxH + 2, 4, 2);
     g.restore();
   }
 
@@ -5420,19 +5623,213 @@
     }
   }
 
-  /** Draws the thought bubble of the agent you are sitting beside. */
+  /* ---------- roaming student jargon helpers ------------------------------- */
+  function initBotState(o) {
+    const bot = o && o.bot;
+    if (!bot || bot._inited) return;
+    bot._inited = true;
+    bot.homeX = (o.chair.x + o.chair.w / 2) * TILE;
+    bot.homeY = (o.chair.y + o.chair.h) * TILE + 8;
+    bot.x = bot.homeX;
+    bot.y = bot.homeY;
+    bot.dir = 'down';
+    bot.moving = false;
+    bot.animT = 0;
+    bot.roaming = false;
+    bot.returning = false;
+    bot.targetX = bot.homeX;
+    bot.targetY = bot.homeY;
+    bot.roamT = 0;
+    bot.maxRoamT = 14;
+    bot.pauseT = 0;
+    bot.cooldownT = 1.2 + Math.random() * 4.5;
+  }
+
+  function pickJargonIndex(current) {
+    const jargonIndices = [];
+    for (let i = 0; i < BOT_LINES.length; i++) {
+      if (BOT_LINES[i].tag === 'jargon') jargonIndices.push(i);
+    }
+    const pool = jargonIndices.length
+      ? jargonIndices
+      : BOT_LINES.map(function (_, idx) { return idx; });
+    if (!pool.length) return 0;
+    let pick = pool[Math.floor(Math.random() * pool.length)];
+    if (pool.length > 1 && pick === current) {
+      pick = pool[(pool.indexOf(pick) + 1) % pool.length];
+    }
+    return pick;
+  }
+
+  function pickBotWaypoint(o, bot) {
+    const candidates = [
+      { x: (o.chair.x + o.chair.w / 2) * TILE, y: (o.chair.y + o.chair.h + 1.2) * TILE },
+      { x: 6.2 * TILE, y: 8.2 * TILE },
+      { x: 10.2 * TILE, y: 8.2 * TILE },
+      { x: 14.2 * TILE, y: 8.2 * TILE },
+      { x: 17.8 * TILE, y: 8.2 * TILE },
+      { x: 6.2 * TILE, y: 12.6 * TILE },
+      { x: 10.5 * TILE, y: 12.6 * TILE },
+      { x: 14.5 * TILE, y: 12.6 * TILE },
+      { x: 9.5 * TILE, y: 4.3 * TILE },
+      { x: 13.5 * TILE, y: 4.3 * TILE }
+    ];
+    for (let tries = 0; tries < 14; tries++) {
+      const c = candidates[Math.floor(Math.random() * candidates.length)];
+      const tx = clamp(c.x + (Math.random() - 0.5) * 16, 2 * TILE, (room.cols - 2) * TILE);
+      const ty = clamp(c.y + (Math.random() - 0.5) * 10, 3.8 * TILE, (room.rows - 1.8) * TILE);
+      if (canStand(tx, ty) && Math.hypot(tx - bot.x, ty - bot.y) > 20) {
+        return { x: tx, y: ty };
+      }
+    }
+    return { x: bot.homeX, y: bot.homeY };
+  }
+
+  function updateBots(dt) {
+    if (!room || !room.objects) return;
+    if (!state.started || state.paused || roundOver() || Dialogue.open || Book.open) return;
+
+    let roamingCount = 0;
+    const stations = [];
+    for (let i = 0; i < room.objects.length; i++) {
+      const o = room.objects[i];
+      if (!o.bot || !o.chair) continue;
+      initBotState(o);
+      if (player.seated === o) {
+        o.bot.roaming = false;
+        o.bot.returning = false;
+        o.bot.moving = false;
+        continue;
+      }
+      if (o.bot.roaming) roamingCount++;
+      stations.push(o);
+    }
+
+    for (let i = 0; i < stations.length; i++) {
+      const o = stations[i];
+      const bot = o.bot;
+      if (bot.roaming) {
+        bot.roamT += dt;
+        bot.thoughtT += dt;
+        if (bot.thoughtT > 6.5) {
+          bot.thought = pickJargonIndex(bot.thought);
+          bot.thoughtT = 0;
+        }
+        if (bot.roamT >= bot.maxRoamT && !bot.returning) {
+          bot.returning = true;
+          bot.targetX = bot.homeX;
+          bot.targetY = bot.homeY;
+          bot.pauseT = 0;
+        }
+
+        if (bot.pauseT > 0) {
+          bot.pauseT -= dt;
+          bot.moving = false;
+          bot.dir = 'down';
+          if (bot.pauseT <= 0 && !bot.returning) {
+            const wp = pickBotWaypoint(o, bot);
+            bot.targetX = wp.x;
+            bot.targetY = wp.y;
+          }
+        } else {
+          const dx = bot.targetX - bot.x;
+          const dy = bot.targetY - bot.y;
+          const dist = Math.hypot(dx, dy);
+          if (dist <= 3) {
+            bot.x = bot.targetX;
+            bot.y = bot.targetY;
+            bot.moving = false;
+            if (bot.returning) {
+              bot.roaming = false;
+              bot.returning = false;
+              bot.seated = true;
+              bot.thought = -1;
+              bot.cooldownT = 6 + Math.random() * 8;
+              roamingCount = Math.max(0, roamingCount - 1);
+            } else {
+              bot.pauseT = 2.6 + Math.random() * 1.8;
+              bot.dir = 'down';
+            }
+          } else {
+            const speed = 40;
+            const step = Math.min(dist, speed * dt);
+            const nx = bot.x + (dx / dist) * step;
+            const ny = bot.y + (dy / dist) * step;
+            if (Math.abs(dx) > Math.abs(dy)) bot.dir = dx < 0 ? 'left' : 'right';
+            else bot.dir = dy < 0 ? 'up' : 'down';
+
+            if (bot.returning || canStand(nx, ny)) {
+              bot.x = nx;
+              bot.y = ny;
+              bot.moving = true;
+              bot.animT += dt;
+            } else if (canStand(nx, bot.y)) {
+              bot.x = nx;
+              bot.moving = true;
+              bot.animT += dt;
+            } else if (canStand(bot.x, ny)) {
+              bot.y = ny;
+              bot.moving = true;
+              bot.animT += dt;
+            } else {
+              const wp = pickBotWaypoint(o, bot);
+              bot.targetX = wp.x;
+              bot.targetY = wp.y;
+              bot.pauseT = 1.0;
+              bot.moving = false;
+            }
+          }
+        }
+      } else {
+        bot.cooldownT -= dt;
+        if (bot.cooldownT <= 0 && roamingCount < 2) {
+          bot.roaming = true;
+          bot.returning = false;
+          bot.seated = false;
+          bot.x = bot.homeX;
+          bot.y = bot.homeY;
+          bot.roamT = 0;
+          bot.maxRoamT = 13 + Math.random() * 6;
+          bot.thought = pickJargonIndex(bot.thought);
+          bot.thoughtT = 0;
+          const wp = pickBotWaypoint(o, bot);
+          bot.targetX = wp.x;
+          bot.targetY = wp.y;
+          bot.pauseT = 0.5;
+          roamingCount++;
+        } else if (bot.cooldownT <= 0) {
+          bot.cooldownT = 2 + Math.random() * 4;
+        }
+      }
+    }
+  }
+
+  /** Draws the thought bubble of a seated or roaming student agent in CSS space. */
   function drawThoughts(g) {
+    const minY = 52;
+    const placedRects = [];
+
     const station = player.seated;
-    if (!station) return;
-    const line = station.bot ? BOT_LINES[station.bot.thought] : MY_DESK_LINES[player.selfThought];
-    if (!line) return;
-    const anchorX = (station.chair.x + station.chair.w / 2) * TILE;
-    const anchorY = (station.chair.y + station.chair.h) * TILE - 30;
-    /* Keep the bubble below the HUD panels, whatever the zoom level is. */
-    const scaleY = view.cssH / view.offH || 1;
-    const hudWorld = (IS_TOUCH ? 235 : 140) / scaleY;
-    const minY = Math.max(4, cam.top + hudWorld);
-    drawThoughtBubble(g, anchorX, anchorY, line, station.bot ? station.bot.name : null, minY);
+    if (station && !Dialogue.open && !Book.open) {
+      const line = station.bot ? BOT_LINES[station.bot.thought] : MY_DESK_LINES[player.selfThought];
+      if (line) {
+        const anchorX = (station.chair.x + station.chair.w / 2) * TILE;
+        const anchorY = (station.chair.y + station.chair.h) * TILE - 30;
+        drawThoughtBubble(g, anchorX, anchorY, line, station.bot ? station.bot.name : null, minY, placedRects);
+      }
+    }
+
+    /* Roaming students sharing helpful BPO jargons around the floor */
+    if (room && room.objects && !Dialogue.open && !Book.open) {
+      for (let i = 0; i < room.objects.length; i++) {
+        const o = room.objects[i];
+        const bot = o.bot;
+        if (!bot || !bot.roaming || player.seated === o) continue;
+        const rLine = BOT_LINES[bot.thought];
+        if (!rLine) continue;
+        drawThoughtBubble(g, bot.x, bot.y - 28, rLine, bot.name, minY, placedRects);
+      }
+    }
   }
 
   /* ---------- viewport sizing --------------------------------------------- */
@@ -5509,9 +5906,18 @@
 
     if (room.static) g.drawImage(room.static, 0, 0);
 
-    // depth-sorted actors: furniture + the player
+    // depth-sorted actors: furniture + the player + roaming students
     drawList.length = 0;
-    for (let i = 0; i < room.visuals.length; i++) drawList.push(room.visuals[i]);
+    for (let i = 0; i < room.visuals.length; i++) {
+      const v = room.visuals[i];
+      if (v.botObj && v.botObj.bot) {
+        const b = v.botObj.bot;
+        v.depth = (b.roaming && player.seated !== v.botObj)
+          ? b.y
+          : (v.botObj.chair.y + v.botObj.chair.h) * TILE + 1;
+      }
+      drawList.push(v);
+    }
     playerVisual.depth = player.seated
       ? (player.seated.chair.y + player.seated.chair.h) * TILE + 2
       : player.y;
@@ -5524,15 +5930,12 @@
     for (let i = 0; i < drawList.length; i++) drawList[i].draw(g);
 
     drawIndicators(g);
-    drawThoughts(g);
 
-    /* v2.0 ambience: doorway light, sparks, dust motes, target brackets,
-       and Robi's speech bubble (always on top of the world art) */
+    /* v2.0 ambience: doorway light, sparks, dust motes, target brackets */
     drawDoorLight(g);
     drawFx(g);
     drawMotes(g);
     drawTargetHighlight(g);
-    drawRobotBubble(g);
     g.restore();
 
     // night grade + vignette (screen space of the frame buffer)
@@ -5544,6 +5947,14 @@
     vis.setTransform(1, 0, 0, 1, 0, 0);
     vis.imageSmoothingEnabled = false;
     vis.drawImage(frame, 0, 0, frame.width, frame.height, 0, 0, canvas.width, canvas.height);
+
+    // draw speech/thought bubbles at native HiDPI screen resolution so text is crystal-clear
+    const dpr = canvas.width / Math.max(1, view.cssW || canvas.width);
+    vis.save();
+    vis.setTransform(dpr, 0, 0, dpr, 0, 0);
+    drawThoughts(vis);
+    drawRobotBubble(vis);
+    vis.restore();
   }
 
   /* ══════════════════════════════════════════════════════════════════════════
@@ -6305,27 +6716,30 @@
     }
   }
 
-  /* ---------- Robi's speech bubble (drawn in world space) ----------------- */
+  /* ---------- Robi's speech bubble (drawn in CSS space on `vis`) ---------- */
   function drawRobotBubble(g) {
     if (ROBOT.sayT <= 0 || !ROBOT.sayLines.length) return;
     g.save();
-    g.font = '9px "Courier New", monospace';
+    g.font = '600 12px "Segoe UI", "Trebuchet MS", system-ui, -apple-system, sans-serif';
     g.textBaseline = 'top';
     const lines = ROBOT.sayLines;
-    const lh = 11, padX = 6, padY = 4;
+    const lh = 16, padX = 10, padY = 6;
     let wide = 0;
     for (let i = 0; i < lines.length; i++) wide = Math.max(wide, g.measureText(lines[i]).width);
     const bw = Math.round(wide) + padX * 2;
-    const bh = lines.length * lh + padY * 2 - 2;
-    const bx = Math.round(clamp(ROBOT.x - bw / 2, cam.left + 4, cam.left + view.offW - bw - 4));
-    /* never cover the player's head: the bubble clears whichever is higher */
-    const footY = Math.min(ROBOT.y - 28, player.y - 46);
-    const by = Math.round(Math.max(cam.top + 4, footY - bh));
+    const bh = lines.length * lh + padY * 2;
+    const cssW = view.cssW || 800;
+    const footWorldY = Math.min(ROBOT.y - 28, player.y - 46);
+    const pt = worldToCss(ROBOT.x, footWorldY);
+    const bx = Math.round(clamp(pt.x - bw / 2, 8, Math.max(8, cssW - bw - 8)));
+    const by = Math.round(Math.max(52, pt.y - bh - 6));
     const fade = ROBOT.sayT < 0.35 ? ROBOT.sayT / 0.35 : 1;
 
     g.globalAlpha = fade;
 
-    /* bubble body with a 1px dark outline + a pixel tail */
+    /* bubble body with a crisp dark outline + tail */
+    g.fillStyle = 'rgba(5, 3, 12, 0.55)';
+    g.fillRect(bx + 2, by + 2, bw, bh);
     g.fillStyle = '#141024';
     g.fillRect(bx - 1, by - 1, bw + 2, bh + 2);
     g.fillStyle = '#f6efdc';
@@ -6333,14 +6747,14 @@
     g.fillStyle = '#e2d5b4';
     g.fillRect(bx, by + bh - 1, bw, 1);
 
-    const tailX = Math.round(clamp(ROBOT.x - bx, 8, bw - 10));
+    const tailX = Math.round(clamp(pt.x - bx, 10, bw - 12));
     g.fillStyle = '#141024';
-    g.fillRect(bx + tailX - 2, by + bh + 1, 5, 1);
-    g.fillRect(bx + tailX - 1, by + bh + 2, 3, 1);
+    g.fillRect(bx + tailX - 3, by + bh + 1, 7, 2);
+    g.fillRect(bx + tailX - 2, by + bh + 3, 5, 2);
     g.fillStyle = '#f6efdc';
-    g.fillRect(bx + tailX - 1, by + bh, 3, 1);
+    g.fillRect(bx + tailX - 2, by + bh, 5, 2);
 
-    g.fillStyle = '#2a1f3f';
+    g.fillStyle = '#1e1433';
     for (let i = 0; i < lines.length; i++) {
       g.fillText(lines[i], bx + padX, by + padY + i * lh);
     }
@@ -6468,11 +6882,12 @@
     glow(g, r.x + r.w * 0.5, r.y + r.h * 0.55, 52 + pulse * 10, '247,200,90', 0.16 + pulse * 0.08);
   }
 
-  /** Called from the loop: ambient + companion + particles. */
+  /** Called from the loop: ambient + companion + particles + roaming students. */
   function updateWorldFx(dt) {
     updateFx(dt);
     updateMotes(dt);
     robotUpdate(dt);
+    updateBots(dt);
   }
 
   /** Robi reacts when you first step up to a new object. */
@@ -6674,9 +7089,12 @@
     bots: function () {
       return room.objects.filter(o => o.bot).map(o => ({
         station: o.id, name: o.bot.name, seated: o.bot.seated,
+        roaming: !!o.bot.roaming,
+        x: Math.round(o.bot.x || 0), y: Math.round(o.bot.y || 0),
         thought: BOT_LINES[o.bot.thought] || null
       }));
     },
+    stepBots: updateBots,
     advance: function () { Dialogue.advance(); },
     useLetterHint: function () { Dialogue.useLetterHint(); },
     toggleRoom: toggleRoomPanel,

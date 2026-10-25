@@ -1,12 +1,11 @@
 /* ============================================================================
    CallScape — QUESTION BANK (teacher-editable data)
-   Grade 11 Contact Center Services · Quarters 1–4
+   Grade 11 Contact Center Services · Terms 1–3
    ----------------------------------------------------------------------------
-   SCOPE: the four quarterly topics of the CCS subject only.
-     Q1  Operations, Tools & Industry Fundamentals
-     Q2  Communication & Cultural Competency
-     Q3  Inbound & Outbound Call Simulations
-     Q4  Non-Voice & Digital Channel Support
+   SCOPE: the three term topics of the CCS subject.
+     Term 1  Operations, Tools & Industry Fundamentals
+     Term 2  Communication, Voice & Cultural Competency
+     Term 3  Call Simulations, Non-Voice & Digital Channel Support
 
    This file is intentionally SEPARATE from gameplay logic (script.js) so that
    teachers can review / replace the questions without touching the engine.
@@ -19,7 +18,7 @@
    fact. If you edit a question, edit the matching section too — the game
    shows the same `bookRef` label under every question.
 
-   Two questions are asked at each of the four stations, so all four quarters
+   Two questions are asked at each of the four stations, so all three terms
    are reviewed before the exit opens.
 
    To add or edit a question:
@@ -29,7 +28,7 @@
      3. Reload the page. No build step required.
 
    Field reference
-     topic       (string)   'Quarter 1' … 'Quarter 4' — shown as a badge
+     topic       (string)   'Term 1' … 'Term 3' — shown as a badge
      bookRef     (string)   Section name in the handbook
      prompt      (string)   The question shown to the student.
      accepted    (string[]) Every string in this list counts as correct.
@@ -48,11 +47,11 @@
 
 window.CALLSCAPE_QUESTIONS = {
 
-  /* ══════════════════ STATION 1 · Quarter 1 — Operations ══════════════════ */
+  /* ══════════════════ STATION 1 · Term 1 — Operations ══════════════════ */
 
   q_bpo: {
-    topic: 'Quarter 1',
-    bookRef: 'Q1 › What BPO is',
+    topic: 'Term 1',
+    bookRef: 'Term 1 › What BPO is',
     prompt:
       'The orientation slide on the monitor has lost its first line:\n\n' +
       '  ______ is the practice of hiring an outside company to perform\n' +
@@ -69,8 +68,8 @@ window.CALLSCAPE_QUESTIONS = {
   },
 
   q_aht: {
-    topic: 'Quarter 1',
-    bookRef: 'Q1 › Jargons & metrics',
+    topic: 'Term 1',
+    bookRef: 'Term 1 › Jargons & metrics',
     prompt:
       'A team leader points at the floor board:\n\n' +
       '  "This number is our average total time per contact — talk time,\n' +
@@ -86,11 +85,11 @@ window.CALLSCAPE_QUESTIONS = {
     fail: 'Not that one. Think of the metric whose formula adds talk time, hold time and after-call work.'
   },
 
-  /* ═══════════════ STATION 2 · Quarter 2 — Communication ═════════════════ */
+  /* ═══════════════ STATION 2 · Term 2 — Communication ═════════════════ */
 
   q_pitch: {
-    topic: 'Quarter 2',
-    bookRef: 'Q2 › Paralanguage & voice',
+    topic: 'Term 2',
+    bookRef: 'Term 2 › Paralanguage & voice',
     prompt:
       'The coaching sheet lists five voice controls: pitch, projection, pacing, ' +
       'tone and articulation.\n\n' +
@@ -103,8 +102,8 @@ window.CALLSCAPE_QUESTIONS = {
   },
 
   q_timezone: {
-    topic: 'Quarter 2',
-    bookRef: 'Q2 › Cultural variables & geography',
+    topic: 'Term 2',
+    bookRef: 'Term 2 › Cultural variables & geography',
     prompt:
       'Manila is UTC+8 and New York is UTC−5.\n\n' +
       'How many hours BEHIND Manila is New York?',
@@ -116,11 +115,11 @@ window.CALLSCAPE_QUESTIONS = {
     fail: 'Not yet. Add the distance from UTC+8 down to UTC+0 and then down to UTC−5.'
   },
 
-  /* ════════════════ STATION 3 · Quarter 3 — Call skills ══════════════════ */
+  /* ════════════════ STATION 3 · Term 3 — Call skills ══════════════════ */
 
   q_open: {
-    topic: 'Quarter 3',
-    bookRef: 'Q3 › Probing & questioning',
+    topic: 'Term 3',
+    bookRef: 'Term 3 › Probing & questioning',
     prompt:
       'The call-model card reads:\n\n' +
       '  "Ask ______ questions first to widen the conversation, then closed\n' +
@@ -134,8 +133,8 @@ window.CALLSCAPE_QUESTIONS = {
   },
 
   q_deescalate: {
-    topic: 'Quarter 3',
-    bookRef: 'Q3 › Complaint handling',
+    topic: 'Term 3',
+    bookRef: 'Term 3 › Complaint handling',
     prompt:
       'A customer is shouting about a double charge. The five-step model is:\n\n' +
       '  1 ?  2 Empathize and apologize  3 Clarify  4 Act  5 Confirm\n\n' +
@@ -147,11 +146,11 @@ window.CALLSCAPE_QUESTIONS = {
     fail: 'Not quite. It happens before you apologize or ask any question.'
   },
 
-  /* ════════════════ STATION 4 · Quarter 4 — Non-voice ═══════════════════ */
+  /* ════════════════ STATION 4 · Term 3 — Non-voice & Digital ═══════════════════ */
 
   q_subject: {
-    topic: 'Quarter 4',
-    bookRef: 'Q4 › Email support etiquette',
+    topic: 'Term 3',
+    bookRef: 'Term 3 › Email support etiquette',
     prompt:
       'An email is waiting in the outbox and the header field is blank:\n\n' +
       '  ______: Refund status — Ticket #48213\n\n' +
@@ -164,8 +163,8 @@ window.CALLSCAPE_QUESTIONS = {
   },
 
   q_omni: {
-    topic: 'Quarter 4',
-    bookRef: 'Q4 › Omnichannel service delivery',
+    topic: 'Term 3',
+    bookRef: 'Term 3 › Omnichannel service delivery',
     prompt:
       'A customer chats, then calls, then emails — and never repeats the story,\n' +
       'because every channel sees the same account history.\n\n' +
@@ -183,8 +182,8 @@ window.CALLSCAPE_QUESTIONS = {
      six awards the bay's bonus review card. */
 
   q_permission: {
-    topic: 'Quarter 2',
-    bookRef: 'Q2 › Telephone etiquette & call control',
+    topic: 'Term 2',
+    bookRef: 'Term 2 › Telephone etiquette & call control',
     prompt:
       'You need two minutes to check the billing tool.\n\n' +
       'Before you place the caller on hold, you must ask for ______ .',
@@ -196,8 +195,8 @@ window.CALLSCAPE_QUESTIONS = {
   },
 
   q_signpost: {
-    topic: 'Quarter 2',
-    bookRef: 'Q2 › Telephone etiquette & call control',
+    topic: 'Term 2',
+    bookRef: 'Term 2 › Telephone etiquette & call control',
     prompt:
       '"I will ask you two quick questions, then I will explain your options."\n\n' +
       'Telling the customer the steps ahead so they tolerate the wait is called\n' +
@@ -210,8 +209,8 @@ window.CALLSCAPE_QUESTIONS = {
   },
 
   q_ballpark: {
-    topic: 'Quarter 2',
-    bookRef: 'Q2 › Floor idioms',
+    topic: 'Term 2',
+    bookRef: 'Term 2 › Floor idioms',
     prompt:
       'A team leader asks for "a ______ figure" before the report is final.\n\n' +
       'Which floor idiom means a rough estimate?',
@@ -223,8 +222,8 @@ window.CALLSCAPE_QUESTIONS = {
   },
 
   q_escalate: {
-    topic: 'Quarter 3',
-    bookRef: 'Q3 › Escalation & handoffs',
+    topic: 'Term 3',
+    bookRef: 'Term 3 › Escalation & handoffs',
     prompt:
       'The customer is asking for a refund that is above your approval limit.\n\n' +
       'What do you do with the contact?',
@@ -236,8 +235,8 @@ window.CALLSCAPE_QUESTIONS = {
   },
 
   q_warm: {
-    topic: 'Quarter 3',
-    bookRef: 'Q3 › Escalation & handoffs',
+    topic: 'Term 3',
+    bookRef: 'Term 3 › Escalation & handoffs',
     prompt:
       'You brief the next agent, explain the case, and introduce the customer\n' +
       'before the handover.\n\n' +
@@ -250,8 +249,8 @@ window.CALLSCAPE_QUESTIONS = {
   },
 
   q_ftr: {
-    topic: 'Quarter 4',
-    bookRef: 'Q4 › Back-office quality standards',
+    topic: 'Term 3',
+    bookRef: 'Term 3 › Back-office quality standards',
     prompt:
       'In the back office there is no customer on the line, so accuracy is the\n' +
       'metric: the share of records completed with no correction needed.\n\n' +

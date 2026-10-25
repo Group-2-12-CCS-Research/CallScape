@@ -1,6 +1,6 @@
 /* ============================================================================
    CallScape — CCS HANDBOOK (content data)
-   Grade 11 Contact Center Services · Quarters 1–4
+   Grade 11 Contact Center Services · Terms 1–3
    ----------------------------------------------------------------------------
    This is the in-game textbook ("the book" on the laboratory shelf). It is
    plain data: no logic lives here, so a teacher can edit the lesson text
@@ -28,17 +28,17 @@
 
 window.CALLSCAPE_BOOK = {
   title: 'CCS Operations Manual',
-  subtitle: 'Grade 11 Contact Center Services · Quarter 1 to Quarter 4',
+  subtitle: 'Grade 11 Contact Center Services · Term 1 to Term 3',
   edition: 'Training laboratory copy · Emilio Jacinto NHS',
 
   chapters: [
     /* ══════════════════════════════════════════════════════════════════════
-       QUARTER 1
+       TERM 1
        ══════════════════════════════════════════════════════════════════════ */
     {
-      id: 'q1',
-      tab: 'Q1 · Operations',
-      title: 'Quarter 1 — Operations, Tools & Industry Fundamentals',
+      id: 't1',
+      tab: 'Term 1 · Operations',
+      title: 'Term 1 — Operations, Tools & Industry Fundamentals',
       blurb: 'Before you take a single call you need the industry picture, the entrepreneur mindset, the vocabulary of the floor, and the technology you will be sitting in front of.',
       sections: [
         {
@@ -342,12 +342,12 @@ EXAMPLE
     },
 
     /* ══════════════════════════════════════════════════════════════════════
-       QUARTER 2
+       TERM 2
        ══════════════════════════════════════════════════════════════════════ */
     {
-      id: 'q2',
-      tab: 'Q2 · Communication',
-      title: 'Quarter 2 — Communication & Cultural Competency',
+      id: 't2',
+      tab: 'Term 2 · Communication',
+      title: 'Term 2 — Communication, Voice & Cultural Competency',
       blurb: 'On the phone there is no body language to read, so your voice carries everything: the words you choose, how you say them, and how well you understand the person on the other end of the world.',
       sections: [
         {
@@ -622,12 +622,12 @@ Use plain English on the line. Idioms are for the huddle, not the customer.`
     },
 
     /* ══════════════════════════════════════════════════════════════════════
-       QUARTER 3
+       TERM 3
        ══════════════════════════════════════════════════════════════════════ */
     {
-      id: 'q3',
-      tab: 'Q3 · Calls',
-      title: 'Quarter 3 — Inbound & Outbound Call Simulations',
+      id: 't3',
+      tab: 'Term 3 · Calls & Digital',
+      title: 'Term 3 — Call Simulations, Non-Voice & Digital Channels',
       blurb: 'This is the floor itself: opening a call, finding the real problem, selling the benefit, calming an angry customer, and writing it all up properly afterwards.',
       sections: [
         {
@@ -928,21 +928,9 @@ ESCALATE WHEN
             'A handoff note must let the next agent continue without re-asking the customer.',
             'Promised callbacks are commitments; log the time in the customer\'s clock.'
           ]
-        }
-      ]
-    },
-
-    /* ══════════════════════════════════════════════════════════════════════
-       QUARTER 4
-       ══════════════════════════════════════════════════════════════════════ */
-    {
-      id: 'q4',
-      tab: 'Q4 · Non-voice',
-      title: 'Quarter 4 — Non-Voice & Digital Channel Support',
-      blurb: 'Most modern service happens in writing: email, chat, tickets and social media. The same courtesy applies — but now it is permanent, searchable, and judged by grammar.',
-      sections: [
+        },
         {
-          heading: '4.1 Email support etiquette',
+          heading: '3.10 Email support etiquette',
           body:
             'An email is a permanent record, so write it as if the customer, your team leader and ' +
             'the QA analyst will all read it — because they will.\n\n' +
@@ -988,7 +976,7 @@ Ana Reyes · Billing Support · Northline`
           ]
         },
         {
-          heading: '4.2 Live chat and messaging apps',
+          heading: '3.11 Live chat and messaging apps',
           body:
             'Chat is **real-time and informal**, but it is still a professional channel. ' +
             '**Speed matters** — a chat that sits silent for a minute feels abandoned, so ' +
@@ -1031,7 +1019,7 @@ MACROS IN USE
           ]
         },
         {
-          heading: '4.3 Back-end and administrative support',
+          heading: '3.12 Back-end and administrative support',
           body:
             'Back-office work keeps the front office running: **data entry**, **online research**, ' +
             '**document processing**, **billing checks** and **ticket resolution workflows**.\n\n' +
@@ -1068,7 +1056,7 @@ PRIORITY ORDER
           ]
         },
         {
-          heading: '4.4 Omnichannel service delivery',
+          heading: '3.13 Omnichannel service delivery',
           body:
             '**Multichannel** means offering several channels that do not know about each other: ' +
             'you call, then you email, and you have to explain the whole story again. ' +
@@ -1077,7 +1065,7 @@ PRIORITY ORDER
             'same ticket number.\n\n' +
             'The goal is a **seamless journey**: start on chat, move to phone for a complex fix, ' +
             'finish with an email confirmation — without the customer repeating themselves. That ' +
-            'only works if every agent **logs the contact properly** (remember Quarter 3), tags ' +
+            'only works if every agent **logs the contact properly** (remember earlier in Term 3), tags ' +
             'the channel, and links related tickets. If you promise a callback, put it in the ' +
             'system; a promise that lives only in your memory breaks the omnichannel experience.',
           sample: {
@@ -1102,7 +1090,7 @@ THE RULE
           ]
         },
         {
-          heading: '4.5 Chat concurrency and multitasking',
+          heading: '3.14 Chat concurrency and multitasking',
           body:
             'Chat agents usually handle two to four conversations at once — **concurrency**. It ' +
             'works because chat is asynchronous: the customer types, you reply, they read. The ' +
@@ -1137,7 +1125,7 @@ THE RULE
           ]
         },
         {
-          heading: '4.6 Social media and public replies',
+          heading: '3.15 Social media and public replies',
           body:
             'A public post is a conversation with an audience. The customer writes to you, but ' +
             'hundreds of people read the answer. Three rules govern **social care**: **acknowledge ' +
@@ -1171,7 +1159,7 @@ NEVER
           ]
         },
         {
-          heading: '4.7 Back-office quality and data entry standards',
+          heading: '3.16 Back-office quality and data entry standards',
           body:
             'Back-office work — data entry, order processing, claims, reconciliations — is measured ' +
             'differently from voice. There is no customer on the line, so **accuracy replaces ' +
