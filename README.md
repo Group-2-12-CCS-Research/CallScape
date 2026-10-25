@@ -98,9 +98,9 @@ The choice is stored in `callscape.settings.v1.device` and can be switched anyti
 
 | Stage / Room | Size | Role & Objectives |
 |---|---|---|
-| **Stage 1: CCS Training Floor** (`lab`) | 26 × 18 tiles | **Main Escape Room** — Solve **8 core questions** across 4 terminals covering **Term 1–3**, collect the **3 Review Cards** (**Card I · Term 1**, **Card II · Term 2**, **Card III · Term 3**), and unlock the **Exit Door**. |
-| **Stage 1.5: Mock Call Bay** (`bay`) | 20 × 14 tiles | **Optional Practice Annex** — Accessible anytime through the top-wall doorway on the Training Floor. Answer **6 bonus Term 2 & Term 3 drills** (`q_permission`, `q_signpost`, `q_ballpark`, `q_escalate`, `q_warm`, `q_ftr`) to earn the **Mock Call Bay Bonus Card** (`bayCard`) and `+150 XP`. |
-| **Stage 2: QA & Escalation Wing** (`lab2`) | 22 × 15 tiles | **Advanced Level (Unlocks after clearing Stage 1)** — Solve **6 QA questions** across 3 QA terminals (`qa1`, `qa2`, `qa3`), collect **3 QA Relics** (*QA Seal, Calibration Key, Data Privacy Key*), and unlock the **QA Audit Vault** (`+200 XP`). |
+| **Stage 1: CCS Training Floor** (`lab`) | 26 × 18 tiles | **Main Escape Room (First Stage)** — Among the student PCs on the floor, **only your own workstation (`Student PC 01` / `pc1`)** has PC questions (`q_bpo`, `q_aht` for **Card I · Term 1**). Other students' PCs (`pc2`–`pc8`) have no quizzes. Solve the 6 Training Floor questions (`Student PC 01`, `Storage Cabinet`, `Teacher's Notebook`) to collect all **3 Review Cards**. |
+| **Stage 2: Mock Call Bay** (`bay`) | 20 × 14 tiles | **Mock Call Bay (Second Stage)** — Accessible through the top-wall doorway on the Training Floor. Complete **Practice Booth A** (`q_permission`, `q_signpost`), **Practice Booth B** (`q_ballpark`, `q_escalate`), and the **QA Scorecard Board** (`q_warm`, `q_ftr`). Finishing both Stage 1 and Stage 2 (`12 / 12` floor & bay questions + 3 Review Cards) immediately unlocks the **QA & Escalation Wing** door! |
+| **Stage 3: QA & Escalation Wing** (`lab2`) | 22 × 16 tiles | **QA & Escalation Wing (Third Stage — Required Before Exit Door)** — Enter through the upper-right door on the Training Floor once Stage 1 & Stage 2 are cleared. Solve all **6 QA Wing console questions** (`Nesting Pod`, `Escalation Desk`, `QA Console`). Once all 6 QA Wing questions are completed (`18 / 18` pre-door questions total), return to the Training Floor to unlock the **Exit Door** and answer the final 2 questions (`q_subject`, `q_omni` = **20 / 20 questions total**)! |
 
 ### B. Player EXP Levels (`LV 1` to `LV 7`)
 

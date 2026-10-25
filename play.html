@@ -5286,7 +5286,6 @@ NEVER
       rect: { x: 15.75, y: 0.6, w: 1.5, h: 2.35 },
       solid: { x: 15.75, y: 0.6, w: 1.5, h: 2.35 },
       touch: { x: 16.5, y: 3.9 },
-      marker: { x: 16.5, y: 4.15 },
       animated: false,          // an open archway, not the sliding exit
       interact: 'toBay',
       priority: 5
@@ -5513,7 +5512,7 @@ NEVER
       ];
     },
 
-    /* ── Station 1 · Term 1 (industry + metrics) ── */
+    /* ── Station 1 (YOUR PC · Student PC 01) · Term 1 (industry + metrics) ── */
     pc1: function () {
       return [
         {
@@ -5561,7 +5560,7 @@ NEVER
       const pick = notes[Math.floor(Math.random() * notes.length)];
       return [
         { text: pick },
-        { text: 'You move on. Terminal 01, the cabinet and the notebook look more useful.' }
+        { text: 'This is another student\'s PC. Only your own station (**Student PC 01**), the **Storage Cabinet**, the **Teacher\'s Notebook**, and the **Mock Call Bay** booths have review questions.' }
       ];
     },
 
@@ -5599,24 +5598,31 @@ NEVER
         { text: "TEACHER'S NOTEBOOK — TERM 3 (2 of 2)", quiz: 'q_deescalate', card: 'q3Card' },
         {
           text: 'You copy the page into your journal. The bottom line is circled twice: ' +
-                '"EXIT PANEL: Term 3 Final Check — the email field and the shared-context model."'
+                '"EXIT PANEL: Complete the Training Floor, Mock Call Bay, and QA & Escalation Wing first, then take the Term 3 Final Check at the exit door."'
         }
       ];
     },
 
     /* ── Station 4 · Term 3 Final Check (non-voice) then the door ── */
     door: function () {
-      const found = state.clues.length;
+      const found = requiredCardCount();
+      const solvedPreDoor = stage1PreDoorSolvedCount();
+      const totalPreDoor = STAGE1_PRE_DOOR_QUESTIONS.length;
+      const wingDone = wingSolvedCount();
+      const wingTotal = WING_QUESTIONS.length;
       if (state.doorOpen) {
         return [{ text: 'The door stands open, cool air spilling onto the floor.\n\nStep through whenever you are ready.' }];
       }
-      if (found < CLUES_REQUIRED) {
+      if (!isExitDoorReady()) {
         return [
           {
-            text: 'DOOR SECURITY PANEL\n\n' +
-                  '"REVIEW CARDS REQUIRED: ' + CLUES_REQUIRED + '"\n' +
-                  '"DETECTED: ' + found + '"\n\n' +
-                  'The handle will not budge.'
+            text: 'DOOR SECURITY PANEL — LOCKED\n\n' +
+                  '"REVIEW CARDS REQUIRED: ' + CLUES_REQUIRED + ' (DETECTED: ' + found + ' / ' + CLUES_REQUIRED + ')"\n' +
+                  '"FLOOR & MOCK BAY QUESTIONS: ' + totalPreDoor + ' (ANSWERED: ' + solvedPreDoor + ' / ' + totalPreDoor + ')"\n' +
+                  '"QA & ESCALATION WING QUESTIONS: ' + wingTotal + ' (ANSWERED: ' + wingDone + ' / ' + wingTotal + ')"\n\n' +
+                  (isWingReady()
+                    ? 'The **QA & Escalation Wing** door (just above this exit panel) is now OPEN! You must complete all 6 QA & Escalation Wing questions before you can unlock the Exit Door.'
+                    : 'You must complete the Training Floor, the Mock Call Bay, and the QA & Escalation Wing before you can take the Exit Door final check.')
           },
           { text: missingClueHint() }
         ];
@@ -5624,7 +5630,7 @@ NEVER
       if (!state.solved.q_subject || !state.solved.q_omni) {
         return [
           {
-            text: 'The panel scans your three review cards and turns amber.\n\n' +
+            text: 'The panel scans your three review cards and verifies that the Training Floor, Mock Call Bay, and QA & Escalation Wing are all complete. The lock turns amber.\n\n' +
                   '"FINAL CHECK — Term 3: non-voice and digital channels."'
           },
           { text: 'EXIT PANEL — TERM 3 FINAL CHECK (1 of 2)', quiz: 'q_subject' },
@@ -5766,8 +5772,9 @@ NEVER
        ROOM 2 — QA & ESCALATION WING
        ══════════════════════════════════════════════════════════════════════ */
 
-    /* The gate: the wing door refuses to open until the floor is cleared. */
+    /* The gate: the wing door opens once the Training Floor and Mock Call Bay are cleared. */
     toWing: function () {
+      if (isWingReady() && !state.room2Unlocked) unlockWing(false);
       if (!state.room2Unlocked) {
         Sound.locked();
         return [
@@ -5777,8 +5784,9 @@ NEVER
           },
           {
             text: 'The panel scrolls one line:\n\n' +
-                  '  CLEARANCE REQUIRED — complete the training floor first.\n' +
-                  '  Recover 3 review cards, open the exit panel, then return.'
+                  '  CLEARANCE REQUIRED — complete the Training Floor and Mock Call Bay first.\n' +
+                  '  Review cards: ' + requiredCardCount() + ' / ' + CLUES_REQUIRED +
+                  ' · Floor & Mock Bay questions: ' + stage1PreDoorSolvedCount() + ' / ' + STAGE1_PRE_DOOR_QUESTIONS.length
           },
           {
             text: 'You still have work on the floor. ' + missingClueHint()
@@ -5787,10 +5795,9 @@ NEVER
       }
       return [
         {
-          text: 'The **QA & ESCALATION WING**. The keypad went green the moment the ' +
-                'floor cleared, and the shutter is up.\n\n' +
+          text: 'The **QA & ESCALATION WING**. The keypad is green and the shutter is up.\n\n' +
                 'Through the glass: scorecard boards, a nesting pod, and someone on a ' +
-                'headset scoring a recorded call.'
+                'headset scoring a recorded call. Complete all 6 QA Wing questions here before unlocking the Exit Door.'
         },
         { text: 'You shoulder the door open.', action: function () { travelToLab2(); } }
       ];
@@ -5799,8 +5806,9 @@ NEVER
     toLabWing: function () {
       return [
         {
-          text: 'The door back to the **CCS Training Floor**. The desks are dark now — ' +
-                'your shift on the floor is finished.'
+          text: state.room2Cleared
+            ? 'The door back to the **CCS Training Floor**. All QA Wing consoles are complete — head to the Exit Door right below this doorway!'
+            : 'The door back to the **CCS Training Floor**.'
         },
         { text: 'You step back onto the floor.', action: function () { travelToLab(); } }
       ];
@@ -5908,16 +5916,34 @@ NEVER
 
   /* Send the student to the right place based on what is still missing. */
   function missingClueHint() {
-    if (!hasClue('q1Card')) {
-      return 'Aim: terminal 01 in the front row is still logged in. It is asking Term 1 questions.';
+    if (!hasClue('q1Card') || !state.solved.q_bpo || !state.solved.q_aht) {
+      return 'Aim: your station (Student PC 01 in the front row) still has unanswered Term 1 questions.';
     }
-    if (!hasClue('q2Card')) {
-      return 'Aim: the steel cabinet by the right wall has a keypad. It is asking Term 2 questions.';
+    if (!hasClue('q2Card') || !state.solved.q_pitch || !state.solved.q_timezone) {
+      return 'Aim: the Storage Cabinet by the right wall still has unanswered Term 2 questions.';
     }
-    if (!hasClue('q3Card')) {
-      return "Aim: Ms. Reyes' desk at the front of the room holds an open notebook. It is asking Term 3 questions.";
+    if (!hasClue('q3Card') || !state.solved.q_open || !state.solved.q_deescalate) {
+      return "Aim: Ms. Reyes' Open Notebook at the teacher's desk still has unanswered Term 3 questions.";
     }
-    return 'Aim: head to the exit door on the right wall.';
+    if (!state.solved.q_permission || !state.solved.q_signpost) {
+      return 'Aim: enter the Mock Call Bay through the top-wall door and answer Practice Booth A.';
+    }
+    if (!state.solved.q_ballpark || !state.solved.q_escalate) {
+      return 'Aim: enter the Mock Call Bay through the top-wall door and answer Practice Booth B.';
+    }
+    if (!state.solved.q_warm || !state.solved.q_ftr) {
+      return 'Aim: enter the Mock Call Bay through the top-wall door and answer the QA Scorecard Board.';
+    }
+    if (!state.solved.q_scorecard || !state.solved.q_fatal) {
+      return 'Aim: enter the QA & Escalation Wing through the upper-right door and complete the Nesting Pod.';
+    }
+    if (!state.solved.q_escalate_rule || !state.solved.q_dsar) {
+      return 'Aim: enter the QA & Escalation Wing through the upper-right door and complete the Team Leader Desk.';
+    }
+    if (!state.solved.q_calibrate || !state.solved.q_nesting) {
+      return 'Aim: enter the QA & Escalation Wing through the upper-right door and complete the QA Calibration Console.';
+    }
+    return 'Aim: head to the exit door on the right wall to answer the final check.';
   }
 
   /* ══════════════════════════════════════════════════════════════════════════
@@ -6164,33 +6190,62 @@ NEVER
   /* The six wing questions, grouped by the object that asks them. */
   const WING_QUESTIONS = ['q_scorecard', 'q_fatal', 'q_calibrate', 'q_escalate_rule', 'q_dsar', 'q_nesting'];
 
+  /* Stage 1 required cards and all 12 pre-door questions (6 main + 6 floor/bay). */
+  const REQUIRED_CARDS = ['q1Card', 'q2Card', 'q3Card'];
+  const MAIN_QUESTIONS = ['q_bpo', 'q_aht', 'q_pitch', 'q_timezone', 'q_open', 'q_deescalate'];
+  const STAGE1_PRE_DOOR_QUESTIONS = MAIN_QUESTIONS.concat(BAY_QUESTIONS); // 12 questions before exit door
+
+  function requiredCardCount() {
+    let n = 0;
+    for (let i = 0; i < REQUIRED_CARDS.length; i++) if (hasClue(REQUIRED_CARDS[i])) n++;
+    return n;
+  }
+
+  function stage1PreDoorSolvedCount() {
+    let n = 0;
+    for (let i = 0; i < STAGE1_PRE_DOOR_QUESTIONS.length; i++) {
+      if (state.solved[STAGE1_PRE_DOOR_QUESTIONS[i]]) n++;
+    }
+    return n;
+  }
+
+  function isWingReady() {
+    return requiredCardCount() >= REQUIRED_CARDS.length &&
+           stage1PreDoorSolvedCount() >= STAGE1_PRE_DOOR_QUESTIONS.length;
+  }
+
+  function isExitDoorReady() {
+    return isWingReady() &&
+           wingSolvedCount() >= WING_QUESTIONS.length;
+  }
+
   const ROOMS = { lab: ROOM_LAB, bay: ROOM_BAY, lab2: ROOM_WING };
 
   /* Which objects show a floating marker, and when.
      'new' = puzzle still to solve · 'done' = solved · 'info' = readable
      'book' = reference you can read · 'locked' / 'open' = door state. */
   const MARKER_RULES = {
-    pc1:       () => (state.solved.q_aht   ? 'done' : 'new'),
-    cabinet:   () => (state.solved.q_timezone ? 'done' : 'new'),
-    notebook:  () => (state.solved.q_deescalate ? 'done' : 'new'),
+    pc1:       () => (state.solved.q_bpo && state.solved.q_aht ? 'done' : 'new'),
+    cabinet:   () => (state.solved.q_pitch && state.solved.q_timezone ? 'done' : 'new'),
+    notebook:  () => (state.solved.q_open && state.solved.q_deescalate ? 'done' : 'new'),
     bookshelf: () => 'book',
     poster:    () => 'info',
-    bayDoor:   () => 'info',
     bayShelf:  () => 'book',
-    boothA:    () => (state.solved.q_signpost ? 'done' : 'new'),
-    boothB:    () => (state.solved.q_escalate ? 'done' : 'new'),
-    qaBoard:   () => (state.solved.q_ftr ? 'done' : 'new'),
+    boothA:    () => (state.solved.q_permission && state.solved.q_signpost ? 'done' : 'new'),
+    boothB:    () => (state.solved.q_ballpark && state.solved.q_escalate ? 'done' : 'new'),
+    qaBoard:   () => (state.solved.q_warm && state.solved.q_ftr ? 'done' : 'new'),
     bayExit:   () => 'info',
     coachSheet: () => 'info',
     door:      () => (state.doorOpen ? 'open'
-                     : (state.clues.length >= CLUES_REQUIRED ? 'new' : 'locked')),
+                     : (isExitDoorReady() ? 'new' : 'locked')),
     /* Room 2 */
-    toWing:      () => (state.room2Unlocked ? 'open' : 'locked'),
+    toWing:      () => (wingSolvedCount() >= WING_QUESTIONS.length ? 'done'
+                       : ((state.room2Unlocked || isWingReady()) ? 'open' : 'locked')),
     toLabWing:   () => 'info',
     wingShelf:   () => 'book',
-    nestingPod:  () => (state.solved.q_fatal ? 'done' : 'new'),
-    tlDesk:      () => (state.solved.q_dsar ? 'done' : 'new'),
-    qaConsole:   () => (state.solved.q_nesting ? 'done' : 'new'),
+    nestingPod:  () => (state.solved.q_scorecard && state.solved.q_fatal ? 'done' : 'new'),
+    tlDesk:      () => (state.solved.q_escalate_rule && state.solved.q_dsar ? 'done' : 'new'),
+    qaConsole:   () => (state.solved.q_calibrate && state.solved.q_nesting ? 'done' : 'new'),
     relic:       (o) => (o && hasRelic(o.relic) ? 'done' : 'new'),
     rack:        () => 'info',
     cooler:      () => 'info',
@@ -6331,11 +6386,10 @@ NEVER
     state.completed = !!data.completed;
     state.bonus = !!data.bonus;
     state.elapsed = Number(data.elapsed) || 0;
-    /* Room 2: a save written before v2.1 unlocks the wing from `completed`,
-       so an old "lab cleared" save still gets its second room. */
-    state.room2Unlocked = !!data.room2Unlocked || !!data.completed;
+    /* Room 2: unlocks as soon as Stage 1 (Training Floor) and Stage 2 (Mock Call Bay) are complete. */
+    state.room2Unlocked = !!data.room2Unlocked || !!data.completed || isWingReady();
     state.afterWin = !!data.afterWin;
-    state.room2Cleared = !!data.room2Cleared;
+    state.room2Cleared = !!data.room2Cleared || (wingSolvedCount() >= WING_QUESTIONS.length);
     state.relics = Array.isArray(data.relics) ? data.relics.filter(function (k) { return !!RELICS[k]; }) : [];
     state.claimed = (data.claimed && typeof data.claimed === 'object') ? data.claimed : {};
     state.letterHints = (data.letterHints && typeof data.letterHints === 'object') ? data.letterHints : {};
@@ -6600,6 +6654,7 @@ NEVER
         /* rewards only on a real completion: first try = bonus tier */
         Progression.onCorrect(id, a.correct === 1 && a.wrong === 0);
         checkBayBonus();
+        checkWingUnlock();
       } else {
         a.wrong++;
         Progression.onWrong(id);
@@ -6965,6 +7020,16 @@ NEVER
     return true;
   }
 
+  /** Unlock the QA & Escalation Wing as soon as Stage 1 (Training Floor) and Stage 2 (Mock Call Bay) are complete. */
+  function checkWingUnlock() {
+    if (state.room2Unlocked) return false;
+    if (!isWingReady()) return false;
+    unlockWing(true);
+    updateMission();
+    updateHud();
+    return true;
+  }
+
   /** Which handbook chapter answers this question? (derived from `topic`) */
   function bookChapterFor(qid) {
     const q = Questions.get(qid);
@@ -6973,7 +7038,7 @@ NEVER
     if (t.indexOf('term 1') === 0 || t === 't1' || t.indexOf('quarter 1') === 0 || t === 'q1') return 't1';
     if (t.indexOf('term 2') === 0 || t === 't2' || t.indexOf('quarter 2') === 0 || t === 'q2') return 't2';
     if (t.indexOf('term 3') === 0 || t === 't3' || t.indexOf('quarter 3') === 0 || t === 'q3' || t.indexOf('quarter 4') === 0 || t === 'q4') return 't3';
-    if (t.indexOf('qa') === 0 || t.indexOf('qa wing') !== -1) return state.room2Unlocked ? 'qa' : 't1';
+    if (t.indexOf('qa') === 0 || t.indexOf('qa wing') !== -1) return 'qa';
     return 't1';
   }
 
@@ -7438,8 +7503,8 @@ NEVER
     labWing: { x: 22.9, y: 5.9, dir: 'left' } // back onto the floor by the wing door
   };
 
-  /* Room 2 gate: the wing is entered from the floor door, not by a URL. */
-  function wingIsOpen() { return !!state.room2Unlocked; }
+  /* Room 2 gate: the wing is entered from the floor door once Stage 1 & Mock Call Bay are cleared. */
+  function wingIsOpen() { return !!(state.room2Unlocked || isWingReady()); }
 
   /* ---------- smooth room transition (fade out → swap → fade in) ---------- */
   let fadeBusy = false;
@@ -7783,6 +7848,7 @@ NEVER
     fxBurst(player.x, player.y - 12, '247,200,90', 16);
     toast('Review card added — ' + item.title, 'good');
     renderClueChips();
+    checkWingUnlock();
     updateHud();
     updateMission();
     flashMission();
@@ -7793,6 +7859,7 @@ NEVER
   /** Unlock the exit. Called by the final question once it is answered. */
   function openDoor() {
     if (state.doorOpen) return;
+    if (!isExitDoorReady() || !state.solved.q_subject || !state.solved.q_omni) return;
     state.doorOpen = true;
     buildSolids();
     Sound.door();
@@ -7849,13 +7916,14 @@ NEVER
     showCompleteScreen();
   }
 
-  /** Room 1 cleared → the QA & Escalation Wing door opens (idempotent). */
+  /** Stage 1 + Stage 2 cleared → the QA & Escalation Wing door opens (idempotent). */
   function unlockWing(loud) {
     if (state.room2Unlocked) return false;
     state.room2Unlocked = true;
     if (loud) {
-      toast('QA & Escalation Wing unlocked.', 'good');
+      toast('QA & Escalation Wing unlocked! Enter the upper-right door before the Exit Door.', 'good');
       Sound.door();
+      robotSay('Training Floor & Mock Call Bay complete! The QA & Escalation Wing door is now open.', 'cheer', 4);
     }
     saveLocal();
     return true;
@@ -7872,10 +7940,10 @@ NEVER
       Progression.addCoins(WING_REWARD.coins);
       Progression.unlock('wing_clear');
     }
-    toast('Wing cleared — every console on the QA floor answered.', 'good');
+    toast('QA & Escalation Wing cleared! Return to the Training Floor to unlock the Exit Door.', 'good');
     flashMission();
     fxBurst(player.x, player.y - 14, '116,230,214', 26);
-    robotSay('Wing cleared! Verifier, escalation and privacy — all logged.', 'cheer', 4);
+    robotSay('Wing cleared! Return to the Training Floor and answer the Exit Door final check.', 'cheer', 4);
     renderObjectives();
     updateMission();
     saveLocal();
@@ -8002,7 +8070,7 @@ NEVER
      ══════════════════════════════════════════════════════════════════════════ */
 
   function updateHud() {
-    const n = state.clues.length;
+    const n = requiredCardCount();
     el.clueCount.textContent = n + ' / ' + CLUES_REQUIRED;
     el.clueBar.style.width = Math.round((n / CLUES_REQUIRED) * 100) + '%';
     /* v2.0 progression HUD */
@@ -8023,17 +8091,19 @@ NEVER
   }
 
   function updateMission() {
-    const n = state.clues.length;
+    const n = requiredCardCount();
+    const solvedPreDoor = stage1PreDoorSolvedCount();
+    const totalPreDoor = STAGE1_PRE_DOOR_QUESTIONS.length;
     let text, next;
 
-    /* The bay is optional practice: it has its own objective line. */
+    /* The bay is part of Stage 1: it has its own objective line. */
     if (room && room.id === 'bay') {
       const done = BAY_QUESTIONS.filter(function (id) { return !!state.solved[id]; }).length;
       if (state.bonus) {
-        text = 'Mock Call Bay cleared — bonus review card collected.';
-        next = 'Optional · step back through the door to the training floor';
+        text = 'Mock Call Bay cleared — all 6 practice questions answered.';
+        next = 'Step back through the door to the training floor';
       } else if (done === 0) {
-        text = 'Optional: clear the Mock Call Bay. Six practice questions, one bonus card.';
+        text = 'Mock Call Bay — answer all 6 practice questions (Booths A & B and the QA Board).';
         next = 'Booths A & B · the QA board on the wall';
       } else {
         text = 'Mock Call Bay — ' + done + ' / ' + BAY_QUESTIONS.length + ' practice questions answered.';
@@ -8048,7 +8118,10 @@ NEVER
     if (room && room.id === 'lab2') {
       const wdone = wingSolvedCount();
       const relics = relicCount();
-      if (state.room2Cleared && relics >= WING_RELICS.length) {
+      if (state.room2Cleared && !state.completed) {
+        text = 'QA & Escalation Wing cleared! Return to the Training Floor to unlock the Exit Door.';
+        next = (relics < WING_RELICS.length ? 'Optional: ' + relics + '/' + WING_RELICS.length + ' relics · ' : '') + 'Door on left wall returns to the Training Floor';
+      } else if (state.room2Cleared && relics >= WING_RELICS.length) {
         text = 'QA & Escalation Wing cleared — consoles answered, relics logged.';
         next = 'Free review · the door on the left wall returns to the training floor';
       } else if (state.room2Cleared) {
@@ -8068,21 +8141,25 @@ NEVER
     }
 
     if (state.completed) {
-      text = state.room2Unlocked
-        ? 'Training floor cleared. The QA & Escalation Wing is unlocked.'
-        : 'Lab cleared. Every clue recovered.';
-      next = state.room2Unlocked
-        ? 'Wing door: right wall, above the exit panel · QA handbook chapter unlocked'
-        : '';
+      text = 'Building cleared! Training Floor, Mock Call Bay, QA Wing & Exit Door complete.';
+      next = 'Free review · B opens the handbook';
     } else if (state.doorOpen) {
       text = 'The exit is open — step through the doorway.';
       next = 'Door: right wall';
-    } else if (n >= CLUES_REQUIRED) {
-      text = 'All three review cards found. Return to the exit door.';
+    } else if (isExitDoorReady()) {
+      text = 'Training Floor, Mock Call Bay & QA Wing complete! Return to the Exit Door for the final check.';
       next = 'Exit door: right wall · answer the final check';
+    } else if (isWingReady()) {
+      const wdone = wingSolvedCount();
+      text = 'Stage 1 & Mock Call Bay cleared! Complete the QA & Escalation Wing (' + wdone + '/' + WING_QUESTIONS.length + ' consoles) before the Exit Door.';
+      next = 'Next: ' + nextHint() + ' · B opens the handbook';
+    } else if (n >= CLUES_REQUIRED) {
+      const qLeft = totalPreDoor - solvedPreDoor;
+      text = '3/3 review cards found — answer ' + qLeft + ' more Mock Call Bay ' + (qLeft === 1 ? 'question' : 'questions') + ' (' + solvedPreDoor + '/' + totalPreDoor + ') to unlock the QA & Escalation Wing.';
+      next = 'Next: ' + nextHint() + ' · B opens the handbook';
     } else {
       const left = CLUES_REQUIRED - n;
-      text = 'Explore the CCS training floor and recover ' + left + ' more review ' + (left === 1 ? 'card' : 'cards') + '.';
+      text = 'Recover ' + left + ' more review ' + (left === 1 ? 'card' : 'cards') + ' and clear the Training Floor & Mock Call Bay (' + solvedPreDoor + '/' + totalPreDoor + ').';
       next = 'Next: ' + nextHint() + ' · B opens the handbook';
     }
     el.missionText.textContent = text;
@@ -8105,16 +8182,18 @@ NEVER
 
   /** Where to send the player next inside the bay. */
   function bayNextHint() {
-    if (!state.solved.q_signpost) return 'Practice Booth A (call control)';
-    if (!state.solved.q_escalate) return 'Practice Booth B (floor language)';
-    if (!state.solved.q_ftr) return 'the QA scorecard board';
+    if (!state.solved.q_permission || !state.solved.q_signpost) return 'Practice Booth A (call control)';
+    if (!state.solved.q_ballpark || !state.solved.q_escalate) return 'Practice Booth B (floor language)';
+    if (!state.solved.q_warm || !state.solved.q_ftr) return 'the QA scorecard board';
     return 'finish the remaining booth questions';
   }
 
   function nextHint() {
-    if (!hasClue('htmlSheet')) return 'a monitor is still powered on in the front row';
-    if (!hasClue('cssRule')) return 'the steel cabinet against the right wall';
-    if (!hasClue('jsNote')) return "Ms. Reyes' desk and its open notebook";
+    if (!hasClue('q1Card') || !state.solved.q_bpo || !state.solved.q_aht) return 'your station (Student PC 01) in the front row';
+    if (!hasClue('q2Card') || !state.solved.q_pitch || !state.solved.q_timezone) return 'the Storage Cabinet against the right wall';
+    if (!hasClue('q3Card') || !state.solved.q_open || !state.solved.q_deescalate) return "Ms. Reyes' desk and its Open Notebook";
+    if (!BAY_QUESTIONS.every(function (id) { return !!state.solved[id]; })) return 'the Mock Call Bay door on the top wall';
+    if (wingSolvedCount() < WING_QUESTIONS.length) return 'the QA & Escalation Wing door (upper-right wall)';
     return 'the exit door on the right wall';
   }
 
@@ -9737,7 +9816,7 @@ NEVER
     for (let i = 0; i < 6; i++) {
       fill(g, kx + 2 + (i % 2) * 4, ky + 3 + Math.floor(i / 2) * 3, 3, 2, '#4a5470');
     }
-    const ledColor = state.doorOpen ? '134,229,140' : (state.clues.length >= 3 ? '247,200,90' : '238,106,114');
+    const ledColor = state.doorOpen ? '134,229,140' : (isExitDoorReady() ? '247,200,90' : '238,106,114');
     fill(g, kx + 4, ky + 12, 4, 2, 'rgb(' + ledColor + ')');
     glow(g, kx + 6, ky + 13, 12, ledColor, 0.3);
   }
@@ -9749,7 +9828,7 @@ NEVER
   /** The unlockable door between the floor and the wing. */
   function drawWingDoor(g, o) {
     const r = o.rectPx;
-    const open = !!state.room2Unlocked;
+    const open = wingIsOpen();
     const t = ROBOT.hoverT;
 
     // heavy frame, cold steel
@@ -10945,20 +11024,22 @@ NEVER
     if (room.id === 'lab2') {
       const wdone = wingSolvedCount(), relics = relicCount();
       rows.push({ txt: 'Answer the wing consoles', n: wdone + '/' + WING_QUESTIONS.length, done: wdone >= WING_QUESTIONS.length });
-      rows.push({ txt: 'Log the QA relics', n: relics + '/' + WING_RELICS.length, done: relics >= WING_RELICS.length });
-      rows.push({ txt: 'Return to the training floor', done: false, optional: true });
+      rows.push({ txt: 'Log the QA relics', n: relics + '/' + WING_RELICS.length, done: relics >= WING_RELICS.length, optional: true });
+      rows.push({ txt: 'Return to the training floor for Exit Door', done: !!state.doorOpen, optional: true });
     } else if (room.id === 'bay') {
       rows.push({ txt: 'Answer the booth & board questions', n: bayDone + '/' + BAY_QUESTIONS.length, done: bayDone >= BAY_QUESTIONS.length });
       rows.push({ txt: 'Earn the bonus review card', done: !!state.bonus, optional: true });
       rows.push({ txt: 'Return to the training floor', done: false, optional: true });
     } else {
-      rows.push({ txt: 'Recover 3 review cards', n: state.clues.length + '/' + CLUES_REQUIRED, done: state.clues.length >= CLUES_REQUIRED });
+      const cardsFound = requiredCardCount();
+      const wingDone = wingSolvedCount();
+      rows.push({ txt: 'Recover 3 review cards', n: cardsFound + '/' + CLUES_REQUIRED, done: cardsFound >= CLUES_REQUIRED });
       rows.push({ txt: 'Answer the terminal questions', n: mainSolvedCount() + '/6', done: mainSolvedCount() >= 6 });
+      rows.push({ txt: 'Clear the Mock Call Bay', n: bayDone + '/' + BAY_QUESTIONS.length, done: bayDone >= BAY_QUESTIONS.length });
+      rows.push({ txt: 'Unlock the QA & Escalation Wing', done: wingIsOpen() });
+      rows.push({ txt: 'Clear the QA Wing consoles', n: wingDone + '/' + WING_QUESTIONS.length, done: wingDone >= WING_QUESTIONS.length });
       rows.push({ txt: 'Unlock the exit door', done: !!state.doorOpen });
       rows.push({ txt: 'Escape the training floor', done: !!state.completed });
-      rows.push({ txt: 'Unlock the QA & Escalation Wing', done: !!state.room2Unlocked });
-      rows.push({ txt: 'Clear the QA Wing consoles', n: wingSolvedCount() + '/' + WING_QUESTIONS.length, done: !!state.room2Cleared, optional: true });
-      rows.push({ txt: 'Optional: clear the Mock Call Bay', n: bayDone + '/' + BAY_QUESTIONS.length, done: !!state.bonus, optional: true });
     }
 
     /* Phones get a condensed tracker: a progress line + the open objectives,
@@ -11000,7 +11081,6 @@ NEVER
   })();
 
   /** How many of the six card questions (two per station) are solved. */
-  const MAIN_QUESTIONS = ['q_bpo', 'q_aht', 'q_pitch', 'q_timezone', 'q_open', 'q_deescalate'];
   function mainSolvedCount() {
     let n = 0;
     for (let i = 0; i < MAIN_QUESTIONS.length; i++) if (state.solved[MAIN_QUESTIONS[i]]) n++;
