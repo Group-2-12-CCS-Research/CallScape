@@ -190,18 +190,19 @@ journal, the bookshelf in the room, or a link inside any question panel:
 | Q2 · Communication (9) | communication process diagram, active listening, verbal/non-verbal cues, paralanguage (pitch/projection/pacing/tone/articulation), accent-neutralization drills, cultural variables and time zones, **rapport in the first 30 seconds**, **telephone etiquette and call control**, **floor idioms** |
 | Q3 · Calls (9) | inbound 7-step and outbound 6-step flows with a full sample call, feature/benefit/USP and FAB, open vs closed probing, the 5-step de-escalation model, ticket-note documentation, **inbound / outbound / blended campaigns**, **honest up- and cross-selling**, **difficult-customer types with the LAST model**, **escalation, handoffs and call-backs** |
 | Q4 · Non-voice (7) | email etiquette with a full sample email, chat transcripts with macros, back-office data entry and ticket workflows, multichannel vs omnichannel, **chat concurrency**, **social media and public replies**, **back-office first-time-right standards** |
-| Cheat sheet (5) | the eight review answers, every metric formula, a first-week glossary, a script/template bank and the ten golden rules |
 | Glossary (4) | roles, every metric A-to-Z, systems and AUX/disposition codes, and floor slang and idioms |
+| QA Wing (5) | the scorecard and fatal errors, calibration sessions, escalation ladder, data privacy in the wing, and nesting bay |
 
 The reading experience is a real book: a leather cover that swings open, a two-page spread on
 desktop with a clickable contents page, paper-turn animation between chapters, and dark ink on
 warm paper so the text stays legible (see [The handbook](#the-handbook-the-in-game-book)).
 
 Every section has a monospace block — call scripts, emails, chat logs, metric formulas or
-plain notes — colour-accented by kind. Sections that answer a review question carry a
-**★ REVIEW ANSWER** callout with the exact wording the test expects, and each question panel
-shows its quarter and matching section (`Quarter 2` · `Q2 › Paralanguage & voice`), so the
-manual, the review cards in the journal and the tests are always the same statements.
+plain notes — colour-accented by kind. Each question panel shows its quarter and matching
+section (`Quarter 2` · `Q2 › Paralanguage & voice`), and if students have trouble answering a
+question they can spend their earned **EXP (10 XP per step)** to unlock **Letter Hints** right
+inside the quiz panel. Clicking the **Mission** panel at the top of the screen hides or shows
+the mission menu details.
 
 **The room**
 
@@ -307,7 +308,7 @@ callscape/
 ├── script.js       Engine: input, movement, collision, camera, interaction,
 │                   dialogue, questions, state/save, rendering, game loop
 ├── questions.js    Teacher-editable question bank (data only, no logic)
-├── codebook.js     Handbook content — 4 quarters + cheat sheet, lesson text, sample blocks
+├── codebook.js     Handbook content — 4 quarters + glossary + QA wing, lesson text, sample blocks
 └── assets/
     └── README.md   Notes on assets (all art is drawn procedurally at runtime)
 ```

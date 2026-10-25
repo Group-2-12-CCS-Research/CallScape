@@ -1353,6 +1353,7 @@
     room2Cleared: false,    // every wing question answered
     relics: [],             // relic ids collected in the wing
     claimed: {},            // one-time reward ids — nothing pays out twice
+    letterHints: {},        // { questionId: number of letter-hint steps unlocked }
     elapsed: 0,             // seconds of active play
     started: false,
     paused: true,
@@ -1416,6 +1417,7 @@
         room2Cleared: !!state.room2Cleared,
         relics: state.relics.slice(),
         claimed: state.claimed,
+        letterHints: state.letterHints,
         /* v2.0: optional in the v2 payload — older saves simply omit it */
         prog: Progression.snapshot(),
         elapsed: Math.round(state.elapsed),
@@ -1461,6 +1463,7 @@
     state.room2Cleared = !!data.room2Cleared;
     state.relics = Array.isArray(data.relics) ? data.relics.filter(function (k) { return !!RELICS[k]; }) : [];
     state.claimed = (data.claimed && typeof data.claimed === 'object') ? data.claimed : {};
+    state.letterHints = (data.letterHints && typeof data.letterHints === 'object') ? data.letterHints : {};
     /* rewards are optional: a v2 save written before v2.0 restores as level 1 */
     Progression.restore(data.prog || null);
     renderProgHud();
@@ -1774,6 +1777,7 @@
       el.itemCard.hidden = true;
       el.quizFeedback.textContent = '';
       el.quizFeedback.className = 'quiz__feedback';
+      if (el.quizXp) el.quizXp.textContent = '';
       el.quizMeta.textContent = '';
       this.stepLocked = false;
 
@@ -1802,6 +1806,9 @@
         } else {
           this.stepLocked = true;
         }
+        renderLetterHintUI(step.quiz);
+      } else {
+        renderLetterHintUI(null);
       }
 
       /* Clue cards are awarded when the page becomes readable. On quiz pages the
@@ -1892,6 +1899,7 @@
         el.quizFeedback.textContent = (q && q.success) || 'Correct!';
         el.quizFeedback.className = 'quiz__feedback is-right';
         el.quizMeta.textContent = attemptLabel(qid);
+        renderLetterHintUI(qid);
         this.stepLocked = false;
         el.dlgContinue.hidden = false;
         el.dlgContinue.disabled = false;
@@ -1917,10 +1925,139 @@
           el.quizFeedback.className = 'quiz__feedback is-hint';
         }
         el.quizMeta.textContent = attemptLabel(qid);
+        renderLetterHintUI(qid);
         try { el.quizInput.select(); } catch (e) {}
       }
+    },
+
+    /** Spend XP to reveal the next letter(s) of the current quiz answer. */
+    useLetterHint() {
+      const step = this.current();
+      if (!step || !step.quiz || state.solved[step.quiz]) return;
+      const qid = step.quiz;
+      const info = letterHintInfo(qid);
+      if (!info.ans || info.maxSteps <= 0) return;
+      const cur = clamp(Number(state.letterHints[qid]) || 0, 0, info.maxSteps);
+      if (cur >= info.maxSteps) {
+        if (el.quizXp) el.quizXp.textContent = 'All letters for this answer are already revealed!';
+        return;
+      }
+      const avail = Progression.totalXp();
+      if (avail < LETTER_HINT_COST) {
+        Sound.bad();
+        if (el.quizXp) {
+          el.quizXp.innerHTML = 'Need <b>' + LETTER_HINT_COST + ' XP</b> for a letter hint (you have <b>' +
+            avail + ' XP</b>). Read the handbook or inspect room notes to earn XP!';
+        }
+        revealFeedback();
+        return;
+      }
+      if (!Progression.spendXp(LETTER_HINT_COST)) return;
+      state.letterHints[qid] = cur + 1;
+      Sound.interact();
+      renderLetterHintUI(qid);
+      if (el.quizXp) {
+        el.quizXp.innerHTML = 'Spent <b>-' + LETTER_HINT_COST + ' XP</b> for a letter hint · <b>' +
+          Progression.totalXp() + ' XP</b> remaining.';
+      }
+      saveLocal();
+      revealFeedback();
+      try { el.quizInput.focus({ preventScroll: true }); } catch (e) {}
     }
   };
+
+  /* ── EXP-powered Letter Hint helpers ────────────────────────────────────── */
+  const LETTER_HINT_COST = 10;
+
+  function canonicalAnswerFor(qid) {
+    const q = Questions.get(qid);
+    if (!q || !Array.isArray(q.accepted) || !q.accepted.length) return '';
+    return String(q.accepted[0] || '').trim().toUpperCase();
+  }
+
+  function letterHintInfo(qid) {
+    const ans = canonicalAnswerFor(qid);
+    if (!ans) return { ans: '', maxSteps: 0, multiWord: false, words: [], seps: [] };
+    const parts = ans.split(/(\s+|-)/);
+    const words = [];
+    const seps = [];
+    for (let i = 0; i < parts.length; i++) {
+      if (i % 2 === 0) words.push(parts[i]);
+      else seps.push(parts[i]);
+    }
+    const multiWord = words.length > 1;
+    let maxSteps = 0;
+    if (multiWord) {
+      for (let w = 0; w < words.length; w++) {
+        if (words[w].length > maxSteps) maxSteps = words[w].length;
+      }
+    } else {
+      maxSteps = words[0] ? words[0].length : 0;
+    }
+    return { ans: ans, maxSteps: maxSteps, multiWord: multiWord, words: words, seps: seps };
+  }
+
+  function renderLetterHintUI(qid) {
+    if (!el.quizLetterHint || !el.quizHintBtn) return;
+    if (!qid) {
+      el.quizLetterHint.hidden = true;
+      el.quizLetterHint.innerHTML = '';
+      el.quizHintBtn.hidden = true;
+      return;
+    }
+    const info = letterHintInfo(qid);
+    const step = clamp(Number(state.letterHints[qid]) || 0, 0, info.maxSteps);
+    const solved = !!state.solved[qid];
+    const availXp = Progression.totalXp();
+
+    el.quizHintBtn.hidden = false;
+    if (solved) {
+      el.quizHintBtn.disabled = true;
+      el.quizHintBtn.textContent = '✦ Letter Hint (-' + LETTER_HINT_COST + ' XP)';
+    } else if (step >= info.maxSteps && info.maxSteps > 0) {
+      el.quizHintBtn.disabled = true;
+      el.quizHintBtn.textContent = '✦ All letters revealed (' + step + '/' + info.maxSteps + ')';
+    } else {
+      el.quizHintBtn.disabled = false;
+      el.quizHintBtn.textContent = '✦ Letter Hint (-' + LETTER_HINT_COST + ' XP · ' + availXp + ' XP avail)';
+    }
+
+    if (step <= 0 || !info.ans) {
+      el.quizLetterHint.hidden = true;
+      el.quizLetterHint.innerHTML = '';
+      return;
+    }
+
+    let revealedChars = 0;
+    let totalChars = 0;
+    const wordHtml = [];
+    for (let w = 0; w < info.words.length; w++) {
+      const word = info.words[w];
+      const chars = [];
+      for (let c = 0; c < word.length; c++) {
+        totalChars++;
+        const show = c < step;
+        if (show) revealedChars++;
+        chars.push(
+          '<span class="lhint__char' + (show ? ' is-rev' : '') + '">' +
+          (show ? escapeHtml(word.charAt(c)) : '_') +
+          '</span>'
+        );
+      }
+      wordHtml.push('<span class="lhint__word">' + chars.join('') + '</span>');
+      if (w < info.seps.length && info.seps[w].indexOf('-') !== -1) {
+        wordHtml.push('<span class="lhint__sep">-</span>');
+      }
+    }
+
+    el.quizLetterHint.hidden = false;
+    el.quizLetterHint.innerHTML =
+      '<div class="lhint__head">' +
+        '<span>✦ Letter Hint (' + revealedChars + '/' + totalChars + ' letters)</span>' +
+        '<span class="lhint__meta">' + (info.words.length > 1 ? info.words.length + ' words' : totalChars + ' chars') + '</span>' +
+      '</div>' +
+      '<div class="lhint__words">' + wordHtml.join('') + '</div>';
+  }
 
   /** Scroll the dialogue body just enough to show the reward + feedback block. */
   function revealFeedback() {
@@ -1962,6 +2099,7 @@
     if (t.indexOf('quarter 2') === 0 || t === 'q2') return 'q2';
     if (t.indexOf('quarter 3') === 0 || t === 'q3') return 'q3';
     if (t.indexOf('quarter 4') === 0 || t === 'q4') return 'q4';
+    if (t.indexOf('qa') === 0 || t.indexOf('qa wing') !== -1) return state.room2Unlocked ? 'qa' : 'q1';
     return 'q1';
   }
 
@@ -2651,6 +2789,8 @@
     return BOT_LINES[station.bot.thought];
   }
 
+  const STUDY_OBJECTS = { poster: 15, pc2: 15, coachSheet: 15, rack: 15 };
+
   function tryInteract() {
     if (Dialogue.open) { Dialogue.advance(); return; }
     if (!state.started || state.paused || roundOver()) return;
@@ -2664,6 +2804,10 @@
       let seatSteps = [];
       try { seatSteps = build(station) || []; } catch (err) { console.error(err); return; }
       if (!seatSteps.length) return;
+      if (STUDY_OBJECTS[station.interact] && claim('study_' + station.interact)) {
+        Progression.addXp(STUDY_OBJECTS[station.interact]);
+        saveLocal();
+      }
       Dialogue.show(station.label, seatSteps, function () {
         if (player.seated === station) updateHudHints();
       });
@@ -2694,6 +2838,11 @@
     let steps = [];
     try { steps = build(target) || []; } catch (err) { console.error(err); return; }
     if (!steps.length) return;
+
+    if (STUDY_OBJECTS[target.interact] && claim('study_' + target.interact)) {
+      Progression.addXp(STUDY_OBJECTS[target.interact]);
+      saveLocal();
+    }
 
     Dialogue.show(target.label, steps, function () {
       if (target.id === 'exitDoor' && state.doorOpen) updateMission();
@@ -3313,6 +3462,7 @@
     state.room2Cleared = false;
     state.relics = [];
     state.claimed = {};
+    state.letterHints = {};
     completionFresh = false;
     state.elapsed = 0;
     state.paused = false;
@@ -3634,9 +3784,15 @@
     shell: $('game-shell'),
     canvas: $('game'),
     hud: $('hud'),
+    roomPanel: $('room-panel') || document.querySelector('.panel--room'),
+    roomBody: $('room-body'),
+    roomToggleInd: $('room-toggle-ind'),
     roomName: $('room-name'),
     clueCount: $('clue-count'),
     clueBar: $('clue-bar'),
+    missionPanel: $('mission-panel') || document.querySelector('.panel--mission'),
+    missionBody: $('mission-body'),
+    missionToggleInd: $('mission-toggle-ind'),
     missionText: $('mission-text'),
     missionNext: $('mission-next'),
     clueTray: $('clue-tray'),
@@ -3661,6 +3817,8 @@
     quizForm: $('quiz-form'),
     quizInput: $('quiz-input'),
     quizSubmit: $('quiz-submit'),
+    quizLetterHint: $('quiz-letter-hint'),
+    quizHintBtn: $('quiz-hint-btn'),
     quizFeedback: $('quiz-feedback'),
     quizMeta: $('quiz-meta'),
     quizPrompt: $('quiz-prompt'),
@@ -3844,9 +4002,40 @@
       e.preventDefault();
       Dialogue.submit();
     });
+    if (el.quizHintBtn) {
+      el.quizHintBtn.addEventListener('click', function () {
+        Dialogue.useLetterHint();
+      });
+    }
     if (el.quizBookLink) {
       el.quizBookLink.addEventListener('click', function () {
         Book.show(this.dataset.chapter || 'q1');
+      });
+    }
+    if (el.roomPanel) {
+      el.roomPanel.addEventListener('click', function () {
+        Sound.interact();
+        toggleRoomPanel();
+      });
+      el.roomPanel.addEventListener('keydown', function (e) {
+        if (e.code === 'Enter' || e.code === 'Space') {
+          e.preventDefault();
+          Sound.interact();
+          toggleRoomPanel();
+        }
+      });
+    }
+    if (el.missionPanel) {
+      el.missionPanel.addEventListener('click', function () {
+        Sound.interact();
+        toggleMissionPanel();
+      });
+      el.missionPanel.addEventListener('keydown', function (e) {
+        if (e.code === 'Enter' || e.code === 'Space') {
+          e.preventDefault();
+          Sound.interact();
+          toggleMissionPanel();
+        }
       });
     }
 
@@ -3958,13 +4147,44 @@
     }, { passive: false });
   }
 
+  /** Toggle the top-left room / XP panel details on click without removing the tab. */
+  function toggleRoomPanel(forceCollapsed) {
+    if (!el.roomPanel) return false;
+    const collapsed = typeof forceCollapsed === 'boolean'
+      ? forceCollapsed
+      : !el.roomPanel.classList.contains('is-collapsed');
+    el.roomPanel.classList.toggle('is-collapsed', collapsed);
+    el.roomPanel.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    if (document.body && document.body.classList) {
+      document.body.classList.toggle('room-collapsed', collapsed);
+    }
+    if (el.roomBody) el.roomBody.hidden = collapsed;
+    if (el.roomToggleInd) el.roomToggleInd.textContent = collapsed ? '▸' : '▾';
+    return collapsed;
+  }
+
+  /** Toggle the mission panel details on click without removing the mission tab. */
+  function toggleMissionPanel(forceCollapsed) {
+    if (!el.missionPanel) return false;
+    const collapsed = typeof forceCollapsed === 'boolean'
+      ? forceCollapsed
+      : !el.missionPanel.classList.contains('is-collapsed');
+    el.missionPanel.classList.toggle('is-collapsed', collapsed);
+    el.missionPanel.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    if (el.missionBody) el.missionBody.hidden = collapsed;
+    if (el.missionToggleInd) el.missionToggleInd.textContent = collapsed ? '▸' : '▾';
+    return collapsed;
+  }
+
   /** Best guess at which chapter the student needs right now. */
   function guessBookChapter() {
+    if (room && room.id === 'lab2' && state.room2Unlocked) return 'qa';
     if (!hasClue('q1Card')) return 'q1';
     if (!hasClue('q2Card')) return 'q2';
     if (!hasClue('q3Card')) return 'q3';
     if (!state.solved.q_subject || !state.solved.q_omni) return 'q4';
-    return 'cheatsheet';
+    if (state.room2Unlocked) return 'qa';
+    return 'glossary';
   }
 
   /* ══════════════════════════════════════════════════════════════════════════
@@ -5343,9 +5563,10 @@
   /* ---------- level curve -------------------------------------------------- */
   /** XP needed to walk from `level` to `level + 1`. Gentle early, slower later. */
   function xpForLevel(level) { return 90 + (level - 1) * 70; }
+  const STARTER_XP = 30;
 
   const PROG = {
-    xp: 0,
+    xp: STARTER_XP,
     level: 1,
     coins: 0,
     streak: 0,
@@ -5567,6 +5788,38 @@
 
   /* ---------- the progression API ---------------------------------------- */
   const Progression = {
+    /** Total spendable XP across all earned levels. */
+    totalXp() {
+      let total = PROG.xp;
+      for (let lv = 1; lv < PROG.level; lv++) total += xpForLevel(lv);
+      return total;
+    },
+
+    /** Spend XP (e.g. for a letter hint), stepping down a level if needed. */
+    spendXp(cost) {
+      cost = Math.max(0, Math.round(cost));
+      if (!cost) return true;
+      if (this.totalXp() < cost) return false;
+      let rem = cost;
+      while (rem > 0) {
+        if (PROG.xp >= rem) {
+          PROG.xp -= rem;
+          rem = 0;
+        } else if (PROG.level > 1) {
+          rem -= PROG.xp;
+          PROG.level--;
+          PROG.xp = xpForLevel(PROG.level);
+        } else {
+          PROG.xp = 0;
+          rem = 0;
+        }
+      }
+      popReward('-' + cost + ' XP (Hint)', 'xp');
+      renderProgHud();
+      if (state.started) saveLocal();
+      return true;
+    },
+
     /** Add XP (handles multi-level ups) and update the HUD. */
     addXp(amount, silent) {
       if (!amount) return;
@@ -5636,7 +5889,10 @@
       PROG.streak = 0;
       renderProgHud();
       popChip(el.streakChip);
-      if (el.quizXp) el.quizXp.textContent = 'No XP this time — read the hint and try again.';
+      if (el.quizXp) {
+        el.quizXp.innerHTML = 'No XP this time — check the handbook or spend <b>' +
+          LETTER_HINT_COST + ' XP</b> for a letter hint.';
+      }
       robotSay(hintLineFor(qid), 'sad', 4);
       renderObjectives();
     },
@@ -5679,7 +5935,13 @@
     },
 
     onBookOpen() {
-      if (state.started) this.unlock('scholar');
+      if (state.started) {
+        if (claim('study_handbook')) this.addXp(20);
+        this.unlock('scholar');
+        if (Dialogue.open && Dialogue.current() && Dialogue.current().quiz) {
+          renderLetterHintUI(Dialogue.current().quiz);
+        }
+      }
     },
 
     onVisit(roomId) {
@@ -5688,7 +5950,7 @@
     },
 
     reset() {
-      PROG.xp = 0; PROG.level = 1; PROG.coins = 0;
+      PROG.xp = STARTER_XP; PROG.level = 1; PROG.coins = 0;
       PROG.streak = 0; PROG.bestStreak = 0;
       PROG.correct = 0; PROG.wrong = 0;
       PROG.achievements = {};
@@ -6346,6 +6608,9 @@
         clues: state.clues.slice(),
         solved: Object.assign({}, state.solved),
         attempts: JSON.parse(JSON.stringify(state.attempts)),
+        letterHints: Object.assign({}, state.letterHints),
+        roomCollapsed: !!(el.roomPanel && el.roomPanel.classList.contains('is-collapsed')),
+        missionCollapsed: !!(el.missionPanel && el.missionPanel.classList.contains('is-collapsed')),
         elapsed: Math.round(state.elapsed),
         player: { x: Math.round(player.x), y: Math.round(player.y), dir: player.dir },
         seated: player.seated ? player.seated.id : null,
@@ -6413,6 +6678,9 @@
       }));
     },
     advance: function () { Dialogue.advance(); },
+    useLetterHint: function () { Dialogue.useLetterHint(); },
+    toggleRoom: toggleRoomPanel,
+    toggleMission: toggleMissionPanel,
     reset: resetGame,
 
     /* screens */

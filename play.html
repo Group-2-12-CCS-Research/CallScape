@@ -112,6 +112,24 @@ body { -webkit-text-size-adjust: 100%; }
   left: 10px;
   min-width: 190px;
   padding: 8px 11px 9px;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: border-color 140ms, background 140ms, padding 140ms;
+}
+.panel--room:hover {
+  border-color: rgba(247, 200, 90, 0.72);
+}
+.panel--room:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+.panel--room.is-collapsed {
+  min-width: 0;
+  padding: 5px 11px 6px;
+}
+.panel--room.is-collapsed .room-body {
+  display: none !important;
 }
 
 .room-name {
@@ -125,6 +143,13 @@ body { -webkit-text-size-adjust: 100%; }
   text-transform: uppercase;
   color: var(--gold);
   text-shadow: 0 2px 0 rgba(0, 0, 0, 0.7);
+}
+.room-toggle-ind {
+  margin-left: auto;
+  padding-left: 4px;
+  font-size: 10px;
+  letter-spacing: 0;
+  color: var(--cyan);
 }
 .room-dot {
   width: 7px; height: 7px;
@@ -203,13 +228,41 @@ body { -webkit-text-size-adjust: 100%; }
   width: min(440px, calc(100vw - 300px));
   padding: 7px 13px 8px;
   text-align: center;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: border-color 140ms, background 140ms, padding 140ms;
+}
+.panel--mission:hover {
+  border-color: rgba(247, 200, 90, 0.72);
+}
+.panel--mission:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
 }
 .mission-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   font-family: var(--font-pix);
   font-size: 9.5px;
   letter-spacing: 2px;
   text-transform: uppercase;
   color: var(--gold);
+}
+.mission-toggle-ind {
+  font-size: 9px;
+  letter-spacing: 0;
+  color: var(--cyan);
+}
+.panel--mission.is-collapsed {
+  width: auto;
+  min-width: 0;
+  padding: 5px 14px 6px;
+}
+.panel--mission.is-collapsed .mission-body {
+  display: none !important;
 }
 .mission-text {
   margin-top: 2px;
@@ -927,6 +980,7 @@ body { -webkit-text-size-adjust: 100%; }
 
   .hud { padding: 8px; }
   .panel--room { top: 8px; left: 8px; min-width: 0; padding: 6px 9px 7px; }
+  .panel--room.is-collapsed { padding: 5px 10px 6px; }
   .room-name { font-size: 11.5px; letter-spacing: 0.8px; }
   .room-sub { display: none; }
   .hud-progress { margin-top: 5px; }
@@ -941,6 +995,14 @@ body { -webkit-text-size-adjust: 100%; }
     transform: none;
     width: calc(100vw - 16px);
     padding: 6px 10px 7px;
+  }
+  body.room-collapsed .panel--mission {
+    top: 46px;
+  }
+  .panel--mission.is-collapsed {
+    width: auto;
+    max-width: calc(100vw - 16px);
+    padding: 5px 12px 6px;
   }
   .mission-label { font-size: 8.5px; letter-spacing: 1.5px; }
   .mission-text { font-size: 11.5px; }
@@ -1726,8 +1788,107 @@ button:focus-visible,
 .badge--topic { color: #0b1f1c; background: #9fe9dc; border-color: #4c9d92; }
 .badge--book  { color: #ffeec4; background: rgba(247,200,90,.12); border-color: rgba(247,200,90,.55); }
 
+.quiz__letter-hint {
+  margin-top: 9px;
+  padding: 8px 11px 9px;
+  background: rgba(15, 11, 28, 0.88);
+  border: 1px solid rgba(247, 200, 90, 0.5);
+  border-left: 3px solid var(--gold);
+  border-radius: 3px;
+}
+.quiz__letter-hint[hidden] {
+  display: none !important;
+}
+.lhint__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 5px;
+  font-family: var(--font-pix);
+  font-size: 8.5px;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+.lhint__meta {
+  color: var(--cyan);
+}
+.lhint__words {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  align-items: center;
+}
+.lhint__word {
+  display: inline-flex;
+  gap: 3px;
+  align-items: center;
+}
+.lhint__char {
+  display: inline-grid;
+  place-items: center;
+  min-width: 19px;
+  height: 22px;
+  padding: 0 3px;
+  font-family: var(--font-pix);
+  font-size: 12px;
+  font-weight: 700;
+  color: #6a5c8d;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(138, 120, 184, 0.35);
+  border-radius: 2px;
+}
+.lhint__char.is-rev {
+  color: #fff5d1;
+  background: rgba(247, 200, 90, 0.18);
+  border-color: rgba(247, 200, 90, 0.72);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6);
+}
+.lhint__sep {
+  font-family: var(--font-pix);
+  font-size: 11px;
+  color: var(--cyan);
+  padding: 0 1px;
+}
+
+.quiz__tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 14px;
+  margin-top: 9px;
+}
+.quiz__hintbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px 6px;
+  font-family: var(--font-pix);
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.7px;
+  color: #ffe8a3;
+  background: linear-gradient(180deg, rgba(247, 200, 90, 0.22), rgba(247, 200, 90, 0.08));
+  border: 1px solid rgba(247, 200, 90, 0.65);
+  border-radius: 3px;
+  cursor: pointer;
+  transition: background 120ms, border-color 120ms, transform 80ms;
+}
+.quiz__hintbtn:hover:not(:disabled) {
+  color: #fff6d6;
+  background: linear-gradient(180deg, rgba(247, 200, 90, 0.34), rgba(247, 200, 90, 0.15));
+  border-color: var(--gold);
+}
+.quiz__hintbtn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.quiz__hintbtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .quiz__booklink {
-  margin-top: 8px;
   font-family: var(--font-pix);
   font-size: 9.5px;
   letter-spacing: 0.8px;
@@ -2471,25 +2632,27 @@ body.device-pc #btn-stand { margin-bottom: 0; }
   <div id="hud" class="hud">
 
     <!-- top-left: room name -->
-    <div class="panel panel--room" id="room-panel">
-      <div class="room-name"><span class="room-dot" aria-hidden="true"></span><span id="room-name">CCS Training Floor</span></div>
-      <div class="room-sub">Grade 11 · Contact Center Services</div>
-      <div class="hud-progress">
-        <div class="hud-progress__label"><span>Clues</span><span id="clue-count">0 / 3</span></div>
-        <div class="hud-progress__track"><i id="clue-bar" style="width:0%"></i></div>
-      </div>
-
-      <!-- progression: level, XP and the reward wallet -->
-      <div class="hud-xp">
-        <div class="hud-xp__row">
-          <span class="lvl-badge" id="lvl-badge" title="Level">LV 1</span>
-          <span class="hud-xp__label" id="xp-label">0 / 100 XP</span>
+    <div class="panel panel--room" id="room-panel" role="button" tabindex="0" aria-expanded="true" title="Click to hide or show training floor &amp; XP panel">
+      <div class="room-name"><span class="room-dot" aria-hidden="true"></span><span id="room-name">CCS Training Floor</span><span class="room-toggle-ind" id="room-toggle-ind" aria-hidden="true">▾</span></div>
+      <div class="room-body" id="room-body">
+        <div class="room-sub">Grade 11 · Contact Center Services</div>
+        <div class="hud-progress">
+          <div class="hud-progress__label"><span>Clues</span><span id="clue-count">0 / 3</span></div>
+          <div class="hud-progress__track"><i id="clue-bar" style="width:0%"></i></div>
         </div>
-        <div class="hud-progress__track hud-progress__track--xp"><i id="xp-bar" style="width:0%"></i></div>
-        <div class="hud-wallet">
-          <span class="wallet-chip" id="coin-count" title="Training coins">◎ 0</span>
-          <span class="wallet-chip wallet-chip--streak" id="streak-chip" title="Correct-answer streak">▲ 0</span>
-          <span class="wallet-chip wallet-chip--badge" id="badge-count" title="Achievements">★ 0</span>
+
+        <!-- progression: level, XP and the reward wallet -->
+        <div class="hud-xp">
+          <div class="hud-xp__row">
+            <span class="lvl-badge" id="lvl-badge" title="Level">LV 1</span>
+            <span class="hud-xp__label" id="xp-label">0 / 100 XP</span>
+          </div>
+          <div class="hud-progress__track hud-progress__track--xp"><i id="xp-bar" style="width:0%"></i></div>
+          <div class="hud-wallet">
+            <span class="wallet-chip" id="coin-count" title="Training coins">◎ 0</span>
+            <span class="wallet-chip wallet-chip--streak" id="streak-chip" title="Correct-answer streak">▲ 0</span>
+            <span class="wallet-chip wallet-chip--badge" id="badge-count" title="Achievements">★ 0</span>
+          </div>
         </div>
       </div>
     </div>
@@ -2502,11 +2665,13 @@ body.device-pc #btn-stand { margin-bottom: 0; }
     </div>
 
     <!-- objective -->
-    <div class="panel panel--mission">
-      <div class="mission-label">◆ Mission</div>
-      <div class="mission-text" id="mission-text">Explore the CCS training floor and look for clues.</div>
-      <div class="mission-next" id="mission-next"></div>
-      <ul class="obj-list" id="obj-list" aria-label="Objectives"></ul>
+    <div class="panel panel--mission" id="mission-panel" role="button" tabindex="0" aria-expanded="true" title="Click to hide or show mission menu">
+      <div class="mission-label"><span>◆ Mission</span><span class="mission-toggle-ind" id="mission-toggle-ind" aria-hidden="true">▾</span></div>
+      <div class="mission-body" id="mission-body">
+        <div class="mission-text" id="mission-text">Explore the CCS training floor and look for clues.</div>
+        <div class="mission-next" id="mission-next"></div>
+        <ul class="obj-list" id="obj-list" aria-label="Objectives"></ul>
+      </div>
     </div>
 
     <!-- floating "+XP / +coin" feedback, level-up banner and achievement popups -->
@@ -2573,10 +2738,14 @@ body.device-pc #btn-stand { margin-bottom: 0; }
                    autocapitalize="off" autocorrect="off" spellcheck="false" maxlength="80" />
             <button class="quiz__submit" id="quiz-submit" type="submit">Submit</button>
           </div>
+          <div class="quiz__letter-hint" id="quiz-letter-hint" hidden aria-live="polite"></div>
           <div class="quiz__feedback" id="quiz-feedback" aria-live="polite"></div>
           <div class="quiz__xp" id="quiz-xp" aria-live="polite"></div>
           <div class="quiz__meta" id="quiz-meta"></div>
-          <button class="quiz__booklink" id="quiz-booklink" type="button">▤ Check the handbook (offline notes)</button>
+          <div class="quiz__tools">
+            <button class="quiz__hintbtn" id="quiz-hint-btn" type="button">✦ Letter Hint (-10 XP)</button>
+            <button class="quiz__booklink" id="quiz-booklink" type="button">▤ Check the handbook (offline notes)</button>
+          </div>
         </form>
 
         <!-- item collected card -->
@@ -3465,7 +3634,6 @@ THE FLOOR SAYS ...
   "Mind your adherence"    → take breaks exactly on the schedule
   "That call escalated"    → passed to a higher level`
           },
-          answer: 'Which metric is the average time spent handling one contact, including talk, hold and after-call work?  AHT (Average Handle Time) — (talk + hold + ACW) ÷ calls handled.',
           notes: [
             'AHT = talk + hold + ACW (per call, averaged).',
             'CSAT = satisfied ÷ responses × 100.',
@@ -3507,7 +3675,6 @@ THE FLOOR SAYS ...
 IF THE POWER DROPS
   UPS keeps the PC and phone running → finish the call or save the note`
           },
-          answer: 'Which tool routes an incoming call to the next available agent?  ACD — the Automatic Call Distributor. (CRM stores the customer record; IVR plays the menu.)',
           notes: [
             'CRM = memory. ACD = traffic enforcer. IVR = recorded menu. UPS = power backup.',
             'Headset hygiene and microphone position affect quality scores.',
@@ -3716,7 +3883,6 @@ DRILL: same sentence, four tones
   "I can help you with that."      calm / warm / firm / apologetic
   Record yourself, listen back, and mark which word you stressed.`
           },
-          answer: 'Which element of paralanguage describes how high or low a voice is?  Pitch — projection is volume, pacing is speed, articulation is clarity.',
           notes: [
             'Pitch = high/low. Projection = volume. Pacing = speed.',
             'Tone = emotional colour. Articulation = clarity.',
@@ -3792,7 +3958,6 @@ ALWAYS
   Check the live time convertor  ·  quote the customer's local time
   Spell names back               ·  avoid idioms and slang`
           },
-          answer: 'Manila is UTC+8 and New York is UTC−5. How many hours behind Manila is New York?  13 hours — 9:00 AM Monday in Manila is 8:00 PM Sunday in New York.',
           notes: [
             'Manila UTC+8 · New York UTC−5 · London UTC+0 · Sydney UTC+10.',
             'Daylight saving can move the difference by one hour.',
@@ -4000,7 +4165,6 @@ AVOID
   "You didn't read the instructions, did you?"   (leading)
   "So where were you and what time was it and did you -"   (stacked)`
           },
-          answer: 'Which type of question begins with who, what, when, where, why or how and invites a full answer?  An open question — a closed question only gives yes/no or one fact.',
           notes: [
             'Open = full answer (who/what/when/how). Closed = yes/no or one fact.',
             'Funnel: open to widen, closed to confirm.',
@@ -4038,7 +4202,6 @@ NEVER SAY
   "Calm down."          "That's our policy." (alone)
   "That's not my job."  "You should have read the email."`
           },
-          answer: 'What is step 1 of the five-step de-escalation model?  Listen — let the customer finish before you clarify and act.',
           notes: [
             'Listen → Empathize/Apologize → Clarify → Act → Confirm.',
             'Apologize for the experience, not for legal fault.',
@@ -4257,7 +4420,6 @@ will follow it up personally.
 Kind regards,
 Ana Reyes · Billing Support · Northline`
           },
-          answer: 'Which part of an email states its purpose in a few words?  The subject line — always include a reference, e.g. "Refund status — Ticket #48213".',
           notes: [
             'Subject line = purpose + reference. Never blank, never "HELP".',
             'Structure: greeting, acknowledgement, finding, action, next step, signature.',
@@ -4373,7 +4535,6 @@ OMNICHANNEL (shared context)
 THE RULE
   If it is not in the CRM, it did not happen.`
           },
-          answer: 'What is it called when phone, email, chat and social media share one customer context?  Omnichannel — multichannel channels do not share it.',
           notes: [
             'Multichannel = many channels, separate records.',
             'Omnichannel = many channels, one shared customer view.',
@@ -4480,130 +4641,6 @@ NEVER
             'Verify with a fixed checklist, every record, every batch.',
             'Never copy customer data outside the approved systems.'
           ]
-        }
-      ]
-    },
-
-    /* ══════════════════════════════════════════════════════════════════════
-       CHEAT SHEET
-       ══════════════════════════════════════════════════════════════════════ */
-    {
-      id: 'cheatsheet',
-      tab: 'Cheat sheet',
-      title: 'Quick reference',
-      blurb: 'One page to check before a quiz or an interview. The eight starred lines are exactly what the training-lab terminals ask.',
-      sections: [
-        {
-          heading: '5.1 The review answers in this lab',
-          body:
-            'The four terminals in the training lab ask for these facts. They are the same ' +
-            'facts written in the clues and in this manual.',
-          sample: {
-            kind: 'formula',
-            src:
-`★ 1. BPO stands for ................ Business Process Outsourcing
-★ 2. Average handle time = .......... AHT  (talk + hold + ACW) ÷ calls
-★ 3. High or low voice = ............ pitch
-★ 4. New York is behind Manila by .... 13 hours  (UTC−5 vs UTC+8)
-★ 5. Question inviting a full answer . open question
-★ 6. De-escalation step 1 = .......... listen
-★ 7. States an email's purpose = ..... subject line
-★ 8. Shared customer context = ...... omnichannel
-
-THE FOUR QUARTERS
-  Q1  operations · BPO · PECs · metrics · tools
-  Q2  communication · voice · accent · culture
-  Q3  inbound & outbound calls · probing · complaints · notes
-  Q4  email · chat · back office · omnichannel`
-          },
-          answer: 'Study these eight lines before you sit at a terminal.'
-        },
-        {
-          heading: '5.2 Metrics and formulas',
-          body:
-            'AHT, CSAT, FCR, ACW, adherence, occupancy, shrinkage, NPS, SLA, QA score — these are ' +
-            'the numbers on the floor boards.',
-          sample: {
-            kind: 'formula',
-            src:
-`AHT   = (talk + hold + ACW) ÷ calls handled
-CSAT  = (satisfied responses ÷ total responses) × 100
-FCR   = (solved on first contact ÷ total contacts) × 100
-NPS   = % promoters − % detractors
-
-STATES
-  READY / AVAILABLE   waiting for a contact
-  TALKING / HOLD      on the line
-  ACW                 after-call work
-  AUX                 work that is not a contact (meetings, coaching)
-  BREAK / LUNCH       scheduled, not AUX`
-          }
-        },
-        {
-          heading: '5.3 Glossary for the first week',
-          body:
-            '**ACD** automatic call distributor · **ACW** after-call work · **AHT** average handle ' +
-            'time · **AUX** auxiliary state · **attrition** agents leaving · **bio break** short ' +
-            'personal break · **blended** inbound and outbound in one queue · **CRM** customer ' +
-            'relationship management · **CSAT** customer satisfaction score · **disposition** the ' +
-            'label on a closed contact · **escalation** passing a contact upward · **FCR** first ' +
-            'contact resolution · **IBPAP** industry association · **IT-BPM** the industry name · ' +
-            '**IVR** interactive voice response · **NPS** net promoter score · **PEZA** ' +
-            'Philippine Economic Zone Authority · **PEC** personal entrepreneurial competency · ' +
-            '**QA** quality assurance · **SLA** service level agreement · **UPS** uninterruptible ' +
-            'power supply · **USP** unique selling proposition · **WFM** workforce management.',
-          notes: [
-            'Use the full term the first time you use an abbreviation.',
-            'Interviews often start by asking you to define two of these.'
-          ]
-        },
-        {
-          heading: '5.4 Script and template bank',
-          body:
-            'The openings you will use most often. Keep them natural, never robotic.',
-          sample: {
-            kind: 'phone',
-            src:
-`INBOUND GREETING
-  "Thank you for calling <company>, this is <name>. How may I help you?"
-
-VERIFICATION
-  "Before we go further, may I confirm your full name and the last four
-   digits of the card on file?"
-
-PLACING ON HOLD
-  "May I place you on a brief hold while I check that? It will be about
-   one minute."
-
-CLOSING
-  "I've <action>. Is there anything else I can help you with today?"
-
-OUTBOUND OPENING (with permission)
-  "Good evening, this is <name> from <company>. Is now a good time for a
-   quick call about your account?"
-
-EMAIL SIGN-OFF
-  "Kind regards, <name> · <team> · <company>"`
-          }
-        },
-        {
-          heading: '5.5 Golden rules of the floor',
-          body:
-            'If you remember nothing else, remember these.',
-          sample: {
-            kind: 'text',
-            src:
-` 1. Verify before you share account details.
- 2. Listen to understand, not to reply.
- 3. Never promise what the system cannot do.
- 4. If it is not in the CRM, it did not happen.
- 5. Protect customer data — RA 10173.
- 6. Take your breaks on schedule; AUX is for work.
- 7. Escalate early rather than guess.
- 8. Say the customer's name, and say it correctly.
- 9. Own the problem until it is solved.
-10. End every contact with a clear next step.`
-          }
         }
       ]
     },
@@ -4752,7 +4789,6 @@ EMAIL SIGN-OFF
 `  ------------------------------------------------\n` +
 `  FATAL ERROR: score recorded as 0%. Coaching booked with TL.`
           },
-          answer: 'The scored checklist QA marks your sampled calls against is the scorecard. A fatal error zeroes the whole contact.',
           notes: [
             'QA samples behaviours, not personality — it is fixable feedback.',
             'Fatal error = one behaviour that wipes the whole score.',
@@ -4769,7 +4805,6 @@ EMAIL SIGN-OFF
             'Calibration is why you can appeal a score and win. Ask for the recording, ask which ' +
             'behaviour was missed, and ask for the calibration example for that behaviour. ' +
             'Disagreeing with a score is allowed; disagreeing without the recording is not.',
-          answer: 'When two analysts score the same call and compare marks until they agree on the standard, that session is calibration.',
           notes: [
             'Calibration = same standard for every agent and every shift.',
             'Ask for the recording before you argue with a score.',
@@ -4789,7 +4824,6 @@ EMAIL SIGN-OFF
             'A good escalation carries: the verified account, the customer\'s own words, what ' +
             'you already tried, and the outcome you are asking for. A warm transfer briefs the ' +
             'next agent before the handover; a cold transfer drops the customer on them.',
-          answer: 'When a case is above your authority you escalate it up the ladder with the notes, never guess an answer.',
           notes: [
             'Escalate early; a guessed answer becomes a repeat call.',
             'Your notes travel with the case — write them as if the next agent is watching.',
@@ -4808,7 +4842,6 @@ EMAIL SIGN-OFF
             'On every contact: verify before you read anything aloud, never repeat card numbers, ' +
             'never confirm an account exists to someone who fails verification, and never store ' +
             'customer data on a personal device or a sticky note.',
-          answer: 'Under RA 10173 a customer asking for a copy of their own records files a data subject access request; route it to the privacy officer.',
           notes: [
             'Verify before you read; no exceptions, even for a friendly caller.',
             'RA 10173 = Data Privacy Act of 2012. PCI DSS covers card data.',
@@ -4824,7 +4857,6 @@ EMAIL SIGN-OFF
             'Nesting is measured by readiness, not speed: verification without prompting, hold ' +
             'etiquette without reminders, notes that a stranger could read. Ask everything while ' +
             'somebody is paid to answer — the questions do not get cheaper later.',
-          answer: 'The supervised stage where a new agent takes live contacts with a coach beside them is nesting.',
           notes: [
             'Nesting = supervised live practice before the solo queue.',
             'Readiness beats speed: clean verification, holds and notes.',
@@ -6193,6 +6225,7 @@ EMAIL SIGN-OFF
     room2Cleared: false,    // every wing question answered
     relics: [],             // relic ids collected in the wing
     claimed: {},            // one-time reward ids — nothing pays out twice
+    letterHints: {},        // { questionId: number of letter-hint steps unlocked }
     elapsed: 0,             // seconds of active play
     started: false,
     paused: true,
@@ -6256,6 +6289,7 @@ EMAIL SIGN-OFF
         room2Cleared: !!state.room2Cleared,
         relics: state.relics.slice(),
         claimed: state.claimed,
+        letterHints: state.letterHints,
         /* v2.0: optional in the v2 payload — older saves simply omit it */
         prog: Progression.snapshot(),
         elapsed: Math.round(state.elapsed),
@@ -6301,6 +6335,7 @@ EMAIL SIGN-OFF
     state.room2Cleared = !!data.room2Cleared;
     state.relics = Array.isArray(data.relics) ? data.relics.filter(function (k) { return !!RELICS[k]; }) : [];
     state.claimed = (data.claimed && typeof data.claimed === 'object') ? data.claimed : {};
+    state.letterHints = (data.letterHints && typeof data.letterHints === 'object') ? data.letterHints : {};
     /* rewards are optional: a v2 save written before v2.0 restores as level 1 */
     Progression.restore(data.prog || null);
     renderProgHud();
@@ -6614,6 +6649,7 @@ EMAIL SIGN-OFF
       el.itemCard.hidden = true;
       el.quizFeedback.textContent = '';
       el.quizFeedback.className = 'quiz__feedback';
+      if (el.quizXp) el.quizXp.textContent = '';
       el.quizMeta.textContent = '';
       this.stepLocked = false;
 
@@ -6642,6 +6678,9 @@ EMAIL SIGN-OFF
         } else {
           this.stepLocked = true;
         }
+        renderLetterHintUI(step.quiz);
+      } else {
+        renderLetterHintUI(null);
       }
 
       /* Clue cards are awarded when the page becomes readable. On quiz pages the
@@ -6732,6 +6771,7 @@ EMAIL SIGN-OFF
         el.quizFeedback.textContent = (q && q.success) || 'Correct!';
         el.quizFeedback.className = 'quiz__feedback is-right';
         el.quizMeta.textContent = attemptLabel(qid);
+        renderLetterHintUI(qid);
         this.stepLocked = false;
         el.dlgContinue.hidden = false;
         el.dlgContinue.disabled = false;
@@ -6757,10 +6797,139 @@ EMAIL SIGN-OFF
           el.quizFeedback.className = 'quiz__feedback is-hint';
         }
         el.quizMeta.textContent = attemptLabel(qid);
+        renderLetterHintUI(qid);
         try { el.quizInput.select(); } catch (e) {}
       }
+    },
+
+    /** Spend XP to reveal the next letter(s) of the current quiz answer. */
+    useLetterHint() {
+      const step = this.current();
+      if (!step || !step.quiz || state.solved[step.quiz]) return;
+      const qid = step.quiz;
+      const info = letterHintInfo(qid);
+      if (!info.ans || info.maxSteps <= 0) return;
+      const cur = clamp(Number(state.letterHints[qid]) || 0, 0, info.maxSteps);
+      if (cur >= info.maxSteps) {
+        if (el.quizXp) el.quizXp.textContent = 'All letters for this answer are already revealed!';
+        return;
+      }
+      const avail = Progression.totalXp();
+      if (avail < LETTER_HINT_COST) {
+        Sound.bad();
+        if (el.quizXp) {
+          el.quizXp.innerHTML = 'Need <b>' + LETTER_HINT_COST + ' XP</b> for a letter hint (you have <b>' +
+            avail + ' XP</b>). Read the handbook or inspect room notes to earn XP!';
+        }
+        revealFeedback();
+        return;
+      }
+      if (!Progression.spendXp(LETTER_HINT_COST)) return;
+      state.letterHints[qid] = cur + 1;
+      Sound.interact();
+      renderLetterHintUI(qid);
+      if (el.quizXp) {
+        el.quizXp.innerHTML = 'Spent <b>-' + LETTER_HINT_COST + ' XP</b> for a letter hint · <b>' +
+          Progression.totalXp() + ' XP</b> remaining.';
+      }
+      saveLocal();
+      revealFeedback();
+      try { el.quizInput.focus({ preventScroll: true }); } catch (e) {}
     }
   };
+
+  /* ── EXP-powered Letter Hint helpers ────────────────────────────────────── */
+  const LETTER_HINT_COST = 10;
+
+  function canonicalAnswerFor(qid) {
+    const q = Questions.get(qid);
+    if (!q || !Array.isArray(q.accepted) || !q.accepted.length) return '';
+    return String(q.accepted[0] || '').trim().toUpperCase();
+  }
+
+  function letterHintInfo(qid) {
+    const ans = canonicalAnswerFor(qid);
+    if (!ans) return { ans: '', maxSteps: 0, multiWord: false, words: [], seps: [] };
+    const parts = ans.split(/(\s+|-)/);
+    const words = [];
+    const seps = [];
+    for (let i = 0; i < parts.length; i++) {
+      if (i % 2 === 0) words.push(parts[i]);
+      else seps.push(parts[i]);
+    }
+    const multiWord = words.length > 1;
+    let maxSteps = 0;
+    if (multiWord) {
+      for (let w = 0; w < words.length; w++) {
+        if (words[w].length > maxSteps) maxSteps = words[w].length;
+      }
+    } else {
+      maxSteps = words[0] ? words[0].length : 0;
+    }
+    return { ans: ans, maxSteps: maxSteps, multiWord: multiWord, words: words, seps: seps };
+  }
+
+  function renderLetterHintUI(qid) {
+    if (!el.quizLetterHint || !el.quizHintBtn) return;
+    if (!qid) {
+      el.quizLetterHint.hidden = true;
+      el.quizLetterHint.innerHTML = '';
+      el.quizHintBtn.hidden = true;
+      return;
+    }
+    const info = letterHintInfo(qid);
+    const step = clamp(Number(state.letterHints[qid]) || 0, 0, info.maxSteps);
+    const solved = !!state.solved[qid];
+    const availXp = Progression.totalXp();
+
+    el.quizHintBtn.hidden = false;
+    if (solved) {
+      el.quizHintBtn.disabled = true;
+      el.quizHintBtn.textContent = '✦ Letter Hint (-' + LETTER_HINT_COST + ' XP)';
+    } else if (step >= info.maxSteps && info.maxSteps > 0) {
+      el.quizHintBtn.disabled = true;
+      el.quizHintBtn.textContent = '✦ All letters revealed (' + step + '/' + info.maxSteps + ')';
+    } else {
+      el.quizHintBtn.disabled = false;
+      el.quizHintBtn.textContent = '✦ Letter Hint (-' + LETTER_HINT_COST + ' XP · ' + availXp + ' XP avail)';
+    }
+
+    if (step <= 0 || !info.ans) {
+      el.quizLetterHint.hidden = true;
+      el.quizLetterHint.innerHTML = '';
+      return;
+    }
+
+    let revealedChars = 0;
+    let totalChars = 0;
+    const wordHtml = [];
+    for (let w = 0; w < info.words.length; w++) {
+      const word = info.words[w];
+      const chars = [];
+      for (let c = 0; c < word.length; c++) {
+        totalChars++;
+        const show = c < step;
+        if (show) revealedChars++;
+        chars.push(
+          '<span class="lhint__char' + (show ? ' is-rev' : '') + '">' +
+          (show ? escapeHtml(word.charAt(c)) : '_') +
+          '</span>'
+        );
+      }
+      wordHtml.push('<span class="lhint__word">' + chars.join('') + '</span>');
+      if (w < info.seps.length && info.seps[w].indexOf('-') !== -1) {
+        wordHtml.push('<span class="lhint__sep">-</span>');
+      }
+    }
+
+    el.quizLetterHint.hidden = false;
+    el.quizLetterHint.innerHTML =
+      '<div class="lhint__head">' +
+        '<span>✦ Letter Hint (' + revealedChars + '/' + totalChars + ' letters)</span>' +
+        '<span class="lhint__meta">' + (info.words.length > 1 ? info.words.length + ' words' : totalChars + ' chars') + '</span>' +
+      '</div>' +
+      '<div class="lhint__words">' + wordHtml.join('') + '</div>';
+  }
 
   /** Scroll the dialogue body just enough to show the reward + feedback block. */
   function revealFeedback() {
@@ -6802,6 +6971,7 @@ EMAIL SIGN-OFF
     if (t.indexOf('quarter 2') === 0 || t === 'q2') return 'q2';
     if (t.indexOf('quarter 3') === 0 || t === 'q3') return 'q3';
     if (t.indexOf('quarter 4') === 0 || t === 'q4') return 'q4';
+    if (t.indexOf('qa') === 0 || t.indexOf('qa wing') !== -1) return state.room2Unlocked ? 'qa' : 'q1';
     return 'q1';
   }
 
@@ -7491,6 +7661,8 @@ EMAIL SIGN-OFF
     return BOT_LINES[station.bot.thought];
   }
 
+  const STUDY_OBJECTS = { poster: 15, pc2: 15, coachSheet: 15, rack: 15 };
+
   function tryInteract() {
     if (Dialogue.open) { Dialogue.advance(); return; }
     if (!state.started || state.paused || roundOver()) return;
@@ -7504,6 +7676,10 @@ EMAIL SIGN-OFF
       let seatSteps = [];
       try { seatSteps = build(station) || []; } catch (err) { console.error(err); return; }
       if (!seatSteps.length) return;
+      if (STUDY_OBJECTS[station.interact] && claim('study_' + station.interact)) {
+        Progression.addXp(STUDY_OBJECTS[station.interact]);
+        saveLocal();
+      }
       Dialogue.show(station.label, seatSteps, function () {
         if (player.seated === station) updateHudHints();
       });
@@ -7534,6 +7710,11 @@ EMAIL SIGN-OFF
     let steps = [];
     try { steps = build(target) || []; } catch (err) { console.error(err); return; }
     if (!steps.length) return;
+
+    if (STUDY_OBJECTS[target.interact] && claim('study_' + target.interact)) {
+      Progression.addXp(STUDY_OBJECTS[target.interact]);
+      saveLocal();
+    }
 
     Dialogue.show(target.label, steps, function () {
       if (target.id === 'exitDoor' && state.doorOpen) updateMission();
@@ -8153,6 +8334,7 @@ EMAIL SIGN-OFF
     state.room2Cleared = false;
     state.relics = [];
     state.claimed = {};
+    state.letterHints = {};
     completionFresh = false;
     state.elapsed = 0;
     state.paused = false;
@@ -8474,9 +8656,15 @@ EMAIL SIGN-OFF
     shell: $('game-shell'),
     canvas: $('game'),
     hud: $('hud'),
+    roomPanel: $('room-panel') || document.querySelector('.panel--room'),
+    roomBody: $('room-body'),
+    roomToggleInd: $('room-toggle-ind'),
     roomName: $('room-name'),
     clueCount: $('clue-count'),
     clueBar: $('clue-bar'),
+    missionPanel: $('mission-panel') || document.querySelector('.panel--mission'),
+    missionBody: $('mission-body'),
+    missionToggleInd: $('mission-toggle-ind'),
     missionText: $('mission-text'),
     missionNext: $('mission-next'),
     clueTray: $('clue-tray'),
@@ -8501,6 +8689,8 @@ EMAIL SIGN-OFF
     quizForm: $('quiz-form'),
     quizInput: $('quiz-input'),
     quizSubmit: $('quiz-submit'),
+    quizLetterHint: $('quiz-letter-hint'),
+    quizHintBtn: $('quiz-hint-btn'),
     quizFeedback: $('quiz-feedback'),
     quizMeta: $('quiz-meta'),
     quizPrompt: $('quiz-prompt'),
@@ -8684,9 +8874,40 @@ EMAIL SIGN-OFF
       e.preventDefault();
       Dialogue.submit();
     });
+    if (el.quizHintBtn) {
+      el.quizHintBtn.addEventListener('click', function () {
+        Dialogue.useLetterHint();
+      });
+    }
     if (el.quizBookLink) {
       el.quizBookLink.addEventListener('click', function () {
         Book.show(this.dataset.chapter || 'q1');
+      });
+    }
+    if (el.roomPanel) {
+      el.roomPanel.addEventListener('click', function () {
+        Sound.interact();
+        toggleRoomPanel();
+      });
+      el.roomPanel.addEventListener('keydown', function (e) {
+        if (e.code === 'Enter' || e.code === 'Space') {
+          e.preventDefault();
+          Sound.interact();
+          toggleRoomPanel();
+        }
+      });
+    }
+    if (el.missionPanel) {
+      el.missionPanel.addEventListener('click', function () {
+        Sound.interact();
+        toggleMissionPanel();
+      });
+      el.missionPanel.addEventListener('keydown', function (e) {
+        if (e.code === 'Enter' || e.code === 'Space') {
+          e.preventDefault();
+          Sound.interact();
+          toggleMissionPanel();
+        }
       });
     }
 
@@ -8798,13 +9019,44 @@ EMAIL SIGN-OFF
     }, { passive: false });
   }
 
+  /** Toggle the top-left room / XP panel details on click without removing the tab. */
+  function toggleRoomPanel(forceCollapsed) {
+    if (!el.roomPanel) return false;
+    const collapsed = typeof forceCollapsed === 'boolean'
+      ? forceCollapsed
+      : !el.roomPanel.classList.contains('is-collapsed');
+    el.roomPanel.classList.toggle('is-collapsed', collapsed);
+    el.roomPanel.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    if (document.body && document.body.classList) {
+      document.body.classList.toggle('room-collapsed', collapsed);
+    }
+    if (el.roomBody) el.roomBody.hidden = collapsed;
+    if (el.roomToggleInd) el.roomToggleInd.textContent = collapsed ? '▸' : '▾';
+    return collapsed;
+  }
+
+  /** Toggle the mission panel details on click without removing the mission tab. */
+  function toggleMissionPanel(forceCollapsed) {
+    if (!el.missionPanel) return false;
+    const collapsed = typeof forceCollapsed === 'boolean'
+      ? forceCollapsed
+      : !el.missionPanel.classList.contains('is-collapsed');
+    el.missionPanel.classList.toggle('is-collapsed', collapsed);
+    el.missionPanel.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    if (el.missionBody) el.missionBody.hidden = collapsed;
+    if (el.missionToggleInd) el.missionToggleInd.textContent = collapsed ? '▸' : '▾';
+    return collapsed;
+  }
+
   /** Best guess at which chapter the student needs right now. */
   function guessBookChapter() {
+    if (room && room.id === 'lab2' && state.room2Unlocked) return 'qa';
     if (!hasClue('q1Card')) return 'q1';
     if (!hasClue('q2Card')) return 'q2';
     if (!hasClue('q3Card')) return 'q3';
     if (!state.solved.q_subject || !state.solved.q_omni) return 'q4';
-    return 'cheatsheet';
+    if (state.room2Unlocked) return 'qa';
+    return 'glossary';
   }
 
   /* ══════════════════════════════════════════════════════════════════════════
@@ -10183,9 +10435,10 @@ EMAIL SIGN-OFF
   /* ---------- level curve -------------------------------------------------- */
   /** XP needed to walk from `level` to `level + 1`. Gentle early, slower later. */
   function xpForLevel(level) { return 90 + (level - 1) * 70; }
+  const STARTER_XP = 30;
 
   const PROG = {
-    xp: 0,
+    xp: STARTER_XP,
     level: 1,
     coins: 0,
     streak: 0,
@@ -10407,6 +10660,38 @@ EMAIL SIGN-OFF
 
   /* ---------- the progression API ---------------------------------------- */
   const Progression = {
+    /** Total spendable XP across all earned levels. */
+    totalXp() {
+      let total = PROG.xp;
+      for (let lv = 1; lv < PROG.level; lv++) total += xpForLevel(lv);
+      return total;
+    },
+
+    /** Spend XP (e.g. for a letter hint), stepping down a level if needed. */
+    spendXp(cost) {
+      cost = Math.max(0, Math.round(cost));
+      if (!cost) return true;
+      if (this.totalXp() < cost) return false;
+      let rem = cost;
+      while (rem > 0) {
+        if (PROG.xp >= rem) {
+          PROG.xp -= rem;
+          rem = 0;
+        } else if (PROG.level > 1) {
+          rem -= PROG.xp;
+          PROG.level--;
+          PROG.xp = xpForLevel(PROG.level);
+        } else {
+          PROG.xp = 0;
+          rem = 0;
+        }
+      }
+      popReward('-' + cost + ' XP (Hint)', 'xp');
+      renderProgHud();
+      if (state.started) saveLocal();
+      return true;
+    },
+
     /** Add XP (handles multi-level ups) and update the HUD. */
     addXp(amount, silent) {
       if (!amount) return;
@@ -10476,7 +10761,10 @@ EMAIL SIGN-OFF
       PROG.streak = 0;
       renderProgHud();
       popChip(el.streakChip);
-      if (el.quizXp) el.quizXp.textContent = 'No XP this time — read the hint and try again.';
+      if (el.quizXp) {
+        el.quizXp.innerHTML = 'No XP this time — check the handbook or spend <b>' +
+          LETTER_HINT_COST + ' XP</b> for a letter hint.';
+      }
       robotSay(hintLineFor(qid), 'sad', 4);
       renderObjectives();
     },
@@ -10519,7 +10807,13 @@ EMAIL SIGN-OFF
     },
 
     onBookOpen() {
-      if (state.started) this.unlock('scholar');
+      if (state.started) {
+        if (claim('study_handbook')) this.addXp(20);
+        this.unlock('scholar');
+        if (Dialogue.open && Dialogue.current() && Dialogue.current().quiz) {
+          renderLetterHintUI(Dialogue.current().quiz);
+        }
+      }
     },
 
     onVisit(roomId) {
@@ -10528,7 +10822,7 @@ EMAIL SIGN-OFF
     },
 
     reset() {
-      PROG.xp = 0; PROG.level = 1; PROG.coins = 0;
+      PROG.xp = STARTER_XP; PROG.level = 1; PROG.coins = 0;
       PROG.streak = 0; PROG.bestStreak = 0;
       PROG.correct = 0; PROG.wrong = 0;
       PROG.achievements = {};
@@ -11186,6 +11480,9 @@ EMAIL SIGN-OFF
         clues: state.clues.slice(),
         solved: Object.assign({}, state.solved),
         attempts: JSON.parse(JSON.stringify(state.attempts)),
+        letterHints: Object.assign({}, state.letterHints),
+        roomCollapsed: !!(el.roomPanel && el.roomPanel.classList.contains('is-collapsed')),
+        missionCollapsed: !!(el.missionPanel && el.missionPanel.classList.contains('is-collapsed')),
         elapsed: Math.round(state.elapsed),
         player: { x: Math.round(player.x), y: Math.round(player.y), dir: player.dir },
         seated: player.seated ? player.seated.id : null,
@@ -11253,6 +11550,9 @@ EMAIL SIGN-OFF
       }));
     },
     advance: function () { Dialogue.advance(); },
+    useLetterHint: function () { Dialogue.useLetterHint(); },
+    toggleRoom: toggleRoomPanel,
+    toggleMission: toggleMissionPanel,
     reset: resetGame,
 
     /* screens */

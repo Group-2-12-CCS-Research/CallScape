@@ -194,7 +194,6 @@ THE FLOOR SAYS ...
   "Mind your adherence"    → take breaks exactly on the schedule
   "That call escalated"    → passed to a higher level`
           },
-          answer: 'Which metric is the average time spent handling one contact, including talk, hold and after-call work?  AHT (Average Handle Time) — (talk + hold + ACW) ÷ calls handled.',
           notes: [
             'AHT = talk + hold + ACW (per call, averaged).',
             'CSAT = satisfied ÷ responses × 100.',
@@ -236,7 +235,6 @@ THE FLOOR SAYS ...
 IF THE POWER DROPS
   UPS keeps the PC and phone running → finish the call or save the note`
           },
-          answer: 'Which tool routes an incoming call to the next available agent?  ACD — the Automatic Call Distributor. (CRM stores the customer record; IVR plays the menu.)',
           notes: [
             'CRM = memory. ACD = traffic enforcer. IVR = recorded menu. UPS = power backup.',
             'Headset hygiene and microphone position affect quality scores.',
@@ -445,7 +443,6 @@ DRILL: same sentence, four tones
   "I can help you with that."      calm / warm / firm / apologetic
   Record yourself, listen back, and mark which word you stressed.`
           },
-          answer: 'Which element of paralanguage describes how high or low a voice is?  Pitch — projection is volume, pacing is speed, articulation is clarity.',
           notes: [
             'Pitch = high/low. Projection = volume. Pacing = speed.',
             'Tone = emotional colour. Articulation = clarity.',
@@ -521,7 +518,6 @@ ALWAYS
   Check the live time convertor  ·  quote the customer's local time
   Spell names back               ·  avoid idioms and slang`
           },
-          answer: 'Manila is UTC+8 and New York is UTC−5. How many hours behind Manila is New York?  13 hours — 9:00 AM Monday in Manila is 8:00 PM Sunday in New York.',
           notes: [
             'Manila UTC+8 · New York UTC−5 · London UTC+0 · Sydney UTC+10.',
             'Daylight saving can move the difference by one hour.',
@@ -729,7 +725,6 @@ AVOID
   "You didn't read the instructions, did you?"   (leading)
   "So where were you and what time was it and did you -"   (stacked)`
           },
-          answer: 'Which type of question begins with who, what, when, where, why or how and invites a full answer?  An open question — a closed question only gives yes/no or one fact.',
           notes: [
             'Open = full answer (who/what/when/how). Closed = yes/no or one fact.',
             'Funnel: open to widen, closed to confirm.',
@@ -767,7 +762,6 @@ NEVER SAY
   "Calm down."          "That's our policy." (alone)
   "That's not my job."  "You should have read the email."`
           },
-          answer: 'What is step 1 of the five-step de-escalation model?  Listen — let the customer finish before you clarify and act.',
           notes: [
             'Listen → Empathize/Apologize → Clarify → Act → Confirm.',
             'Apologize for the experience, not for legal fault.',
@@ -986,7 +980,6 @@ will follow it up personally.
 Kind regards,
 Ana Reyes · Billing Support · Northline`
           },
-          answer: 'Which part of an email states its purpose in a few words?  The subject line — always include a reference, e.g. "Refund status — Ticket #48213".',
           notes: [
             'Subject line = purpose + reference. Never blank, never "HELP".',
             'Structure: greeting, acknowledgement, finding, action, next step, signature.',
@@ -1102,7 +1095,6 @@ OMNICHANNEL (shared context)
 THE RULE
   If it is not in the CRM, it did not happen.`
           },
-          answer: 'What is it called when phone, email, chat and social media share one customer context?  Omnichannel — multichannel channels do not share it.',
           notes: [
             'Multichannel = many channels, separate records.',
             'Omnichannel = many channels, one shared customer view.',
@@ -1209,130 +1201,6 @@ NEVER
             'Verify with a fixed checklist, every record, every batch.',
             'Never copy customer data outside the approved systems.'
           ]
-        }
-      ]
-    },
-
-    /* ══════════════════════════════════════════════════════════════════════
-       CHEAT SHEET
-       ══════════════════════════════════════════════════════════════════════ */
-    {
-      id: 'cheatsheet',
-      tab: 'Cheat sheet',
-      title: 'Quick reference',
-      blurb: 'One page to check before a quiz or an interview. The eight starred lines are exactly what the training-lab terminals ask.',
-      sections: [
-        {
-          heading: '5.1 The review answers in this lab',
-          body:
-            'The four terminals in the training lab ask for these facts. They are the same ' +
-            'facts written in the clues and in this manual.',
-          sample: {
-            kind: 'formula',
-            src:
-`★ 1. BPO stands for ................ Business Process Outsourcing
-★ 2. Average handle time = .......... AHT  (talk + hold + ACW) ÷ calls
-★ 3. High or low voice = ............ pitch
-★ 4. New York is behind Manila by .... 13 hours  (UTC−5 vs UTC+8)
-★ 5. Question inviting a full answer . open question
-★ 6. De-escalation step 1 = .......... listen
-★ 7. States an email's purpose = ..... subject line
-★ 8. Shared customer context = ...... omnichannel
-
-THE FOUR QUARTERS
-  Q1  operations · BPO · PECs · metrics · tools
-  Q2  communication · voice · accent · culture
-  Q3  inbound & outbound calls · probing · complaints · notes
-  Q4  email · chat · back office · omnichannel`
-          },
-          answer: 'Study these eight lines before you sit at a terminal.'
-        },
-        {
-          heading: '5.2 Metrics and formulas',
-          body:
-            'AHT, CSAT, FCR, ACW, adherence, occupancy, shrinkage, NPS, SLA, QA score — these are ' +
-            'the numbers on the floor boards.',
-          sample: {
-            kind: 'formula',
-            src:
-`AHT   = (talk + hold + ACW) ÷ calls handled
-CSAT  = (satisfied responses ÷ total responses) × 100
-FCR   = (solved on first contact ÷ total contacts) × 100
-NPS   = % promoters − % detractors
-
-STATES
-  READY / AVAILABLE   waiting for a contact
-  TALKING / HOLD      on the line
-  ACW                 after-call work
-  AUX                 work that is not a contact (meetings, coaching)
-  BREAK / LUNCH       scheduled, not AUX`
-          }
-        },
-        {
-          heading: '5.3 Glossary for the first week',
-          body:
-            '**ACD** automatic call distributor · **ACW** after-call work · **AHT** average handle ' +
-            'time · **AUX** auxiliary state · **attrition** agents leaving · **bio break** short ' +
-            'personal break · **blended** inbound and outbound in one queue · **CRM** customer ' +
-            'relationship management · **CSAT** customer satisfaction score · **disposition** the ' +
-            'label on a closed contact · **escalation** passing a contact upward · **FCR** first ' +
-            'contact resolution · **IBPAP** industry association · **IT-BPM** the industry name · ' +
-            '**IVR** interactive voice response · **NPS** net promoter score · **PEZA** ' +
-            'Philippine Economic Zone Authority · **PEC** personal entrepreneurial competency · ' +
-            '**QA** quality assurance · **SLA** service level agreement · **UPS** uninterruptible ' +
-            'power supply · **USP** unique selling proposition · **WFM** workforce management.',
-          notes: [
-            'Use the full term the first time you use an abbreviation.',
-            'Interviews often start by asking you to define two of these.'
-          ]
-        },
-        {
-          heading: '5.4 Script and template bank',
-          body:
-            'The openings you will use most often. Keep them natural, never robotic.',
-          sample: {
-            kind: 'phone',
-            src:
-`INBOUND GREETING
-  "Thank you for calling <company>, this is <name>. How may I help you?"
-
-VERIFICATION
-  "Before we go further, may I confirm your full name and the last four
-   digits of the card on file?"
-
-PLACING ON HOLD
-  "May I place you on a brief hold while I check that? It will be about
-   one minute."
-
-CLOSING
-  "I've <action>. Is there anything else I can help you with today?"
-
-OUTBOUND OPENING (with permission)
-  "Good evening, this is <name> from <company>. Is now a good time for a
-   quick call about your account?"
-
-EMAIL SIGN-OFF
-  "Kind regards, <name> · <team> · <company>"`
-          }
-        },
-        {
-          heading: '5.5 Golden rules of the floor',
-          body:
-            'If you remember nothing else, remember these.',
-          sample: {
-            kind: 'text',
-            src:
-` 1. Verify before you share account details.
- 2. Listen to understand, not to reply.
- 3. Never promise what the system cannot do.
- 4. If it is not in the CRM, it did not happen.
- 5. Protect customer data — RA 10173.
- 6. Take your breaks on schedule; AUX is for work.
- 7. Escalate early rather than guess.
- 8. Say the customer's name, and say it correctly.
- 9. Own the problem until it is solved.
-10. End every contact with a clear next step.`
-          }
         }
       ]
     },
@@ -1481,7 +1349,6 @@ EMAIL SIGN-OFF
 `  ------------------------------------------------\n` +
 `  FATAL ERROR: score recorded as 0%. Coaching booked with TL.`
           },
-          answer: 'The scored checklist QA marks your sampled calls against is the scorecard. A fatal error zeroes the whole contact.',
           notes: [
             'QA samples behaviours, not personality — it is fixable feedback.',
             'Fatal error = one behaviour that wipes the whole score.',
@@ -1498,7 +1365,6 @@ EMAIL SIGN-OFF
             'Calibration is why you can appeal a score and win. Ask for the recording, ask which ' +
             'behaviour was missed, and ask for the calibration example for that behaviour. ' +
             'Disagreeing with a score is allowed; disagreeing without the recording is not.',
-          answer: 'When two analysts score the same call and compare marks until they agree on the standard, that session is calibration.',
           notes: [
             'Calibration = same standard for every agent and every shift.',
             'Ask for the recording before you argue with a score.',
@@ -1518,7 +1384,6 @@ EMAIL SIGN-OFF
             'A good escalation carries: the verified account, the customer\'s own words, what ' +
             'you already tried, and the outcome you are asking for. A warm transfer briefs the ' +
             'next agent before the handover; a cold transfer drops the customer on them.',
-          answer: 'When a case is above your authority you escalate it up the ladder with the notes, never guess an answer.',
           notes: [
             'Escalate early; a guessed answer becomes a repeat call.',
             'Your notes travel with the case — write them as if the next agent is watching.',
@@ -1537,7 +1402,6 @@ EMAIL SIGN-OFF
             'On every contact: verify before you read anything aloud, never repeat card numbers, ' +
             'never confirm an account exists to someone who fails verification, and never store ' +
             'customer data on a personal device or a sticky note.',
-          answer: 'Under RA 10173 a customer asking for a copy of their own records files a data subject access request; route it to the privacy officer.',
           notes: [
             'Verify before you read; no exceptions, even for a friendly caller.',
             'RA 10173 = Data Privacy Act of 2012. PCI DSS covers card data.',
@@ -1553,7 +1417,6 @@ EMAIL SIGN-OFF
             'Nesting is measured by readiness, not speed: verification without prompting, hold ' +
             'etiquette without reminders, notes that a stranger could read. Ask everything while ' +
             'somebody is paid to answer — the questions do not get cheaper later.',
-          answer: 'The supervised stage where a new agent takes live contacts with a coach beside them is nesting.',
           notes: [
             'Nesting = supervised live practice before the solo queue.',
             'Readiness beats speed: clean verification, holds and notes.',
